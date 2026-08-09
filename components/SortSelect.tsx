@@ -12,11 +12,13 @@ import { SORT_OPTIONS } from "@/lib/tmdb";
 
 export default function SortSelect({
 	handleClick,
+	sortValue,
 }: {
 	handleClick: (sortValue: string) => void;
+	sortValue: string;
 }) {
 	return (
-		<Select onValueChange={(value) => handleClick(value)}>
+		<Select value={sortValue || "Popularity"} onValueChange={handleClick}>
 			<SelectTrigger className="w-full max-w-48 bg-background border-2 border-(--purple-dark) focus:border">
 				<SelectValue placeholder="Sort Movies" />
 			</SelectTrigger>
