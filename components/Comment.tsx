@@ -33,10 +33,14 @@ export default function Comment({
 	username,
 	content,
 	createdAt,
+	onDelete,
+	isDeleting,
 }: {
 	username: string;
 	content: string;
 	createdAt?: string;
+	onDelete?: () => void;
+	isDeleting?: boolean;
 }) {
 	return (
 		<div className="mb-10">
@@ -50,6 +54,16 @@ export default function Comment({
 					>
 						{formatPostedAt(createdAt)}
 					</time>
+				)}
+				{onDelete && (
+					<button
+						type="button"
+						onClick={onDelete}
+						disabled={isDeleting}
+						className="text-sm text-gray-500 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors duration-200"
+					>
+						{isDeleting ? "Deleting…" : "Delete"}
+					</button>
 				)}
 			</div>
 			<hr className="max-w-6xl mb-5 mt-2 text-(--purple-dark)" />
