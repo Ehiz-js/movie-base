@@ -3,11 +3,11 @@ import Link from "next/link";
 import { FaStar } from "react-icons/fa";
 
 export default function SearchResult({ movie }: { movie: MovieType }) {
-	const { title, poster_path, id, vote_average } = movie;
+	const { title, poster_path, id, vote_average, media_type } = movie;
 	const posterUrl = `https://image.tmdb.org/t/p/w92${poster_path}`;
 	return (
 		<Link
-			href={`/movie/${id}`}
+			href={`/title/${media_type}/${id}`}
 			className="flex items-center w-full p-2 hover:bg-purple-950 transition-colors duration-200"
 		>
 			<div className="flex items-center hover:bg-gray-950 transition-all duration-200">
