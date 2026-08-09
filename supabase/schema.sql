@@ -71,14 +71,21 @@ create table if not exists public.comments (
 );
 
 create table if not exists public.profiles (
-  id                uuid primary key default gen_random_uuid(),
-  user_id           uuid not null unique references auth.users (id) on delete cascade,
-  username          text not null,
-  selected_genres   jsonb not null default '[]'::jsonb,
-  mature            boolean not null default false,
-  selected_language text,
-  created_at        timestamptz not null default now()
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null unique references auth.users (id) on delete cascade,
+  username   text not null,
+  created_at timestamptz not null default now()
 );
+
+-- A profile used to also store genre, language and maturity preferences that
+-- nothing in the app ever read. New projects no longer get those columns.
+-- If yours already has them, this drops them — it is the only destructive
+-- statement in this file, so it is left commented out deliberately.
+--
+-- alter table public.profiles
+--   drop column if exists selected_genres,
+--   drop column if exists mature,
+--   drop column if exists selected_language;
 
 -- ---------------------------------------------------------------------------
 -- 2. Unique constraints
