@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import MovieCard from "@/components/MovieCard";
-import GenreSelect from "@/components/GenreSelect";
+import GenreSelect, { ALL_GENRES } from "@/components/GenreSelect";
 import SortSelect from "@/components/SortSelect";
 import Pagination from "@/components/Pagination";
 import RecentMovieList from "@/components/RecentMovieList";
@@ -116,7 +116,7 @@ export default function Home() {
 	);
 
 	function filterMovies(nextGenreId: string) {
-		setGenreId(nextGenreId);
+		setGenreId(nextGenreId === ALL_GENRES ? "" : nextGenreId);
 		setPageNum(1);
 	}
 
@@ -135,7 +135,11 @@ export default function Home() {
 							movies
 						</h3>
 						<div className="flex flex-col sm:flex-row gap-3">
-							<GenreSelect handleClick={filterMovies} genreList={genreList} />
+							<GenreSelect
+								handleClick={filterMovies}
+								genreList={genreList}
+								genreId={genreId}
+							/>
 							<SortSelect handleClick={setSortValue} />
 						</div>
 					</div>
