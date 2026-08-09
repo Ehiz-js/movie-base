@@ -19,7 +19,9 @@ export default function CommentInputButton({
 	const [errorMsg, setErrorMsg] = useState("");
 	const [successMsg, setSuccessMsg] = useState("");
 	const { user, profile } = useAuth();
-	const name = profile?.username || user?.email?.split("@")[0];
+	// Never fall back to the email local-part: comments are world-readable, and
+	// that would publish part of a real address next to every post.
+	const name = profile?.username;
 
 	async function handleSubmit() {
 		setErrorMsg("");
@@ -27,6 +29,11 @@ export default function CommentInputButton({
 
 		if (!comment.trim()) {
 			setErrorMsg("Please write something first.");
+			return;
+		}
+
+		if (!name) {
+			setErrorMsg("Set a username on your profile before commenting.");
 			return;
 		}
 
