@@ -39,7 +39,7 @@ export default function Navbar() {
 					</div>
 				</div>
 
-				<div className="w-full lg:max-w-sm lg:ml-auto">
+				<div className="lg:ml-auto">
 					<Search />
 				</div>
 
