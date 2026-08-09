@@ -1,3 +1,5 @@
+import { MovieType } from "@/types/movie";
+
 export const SORT_OPTIONS = [
 	"Alphabet",
 	"Popularity",
@@ -6,14 +8,27 @@ export const SORT_OPTIONS = [
 ] as const;
 
 /**
- * Maps the labels shown in SortSelect onto TMDB's `sort_by` values. Sorting is
- * done by TMDB rather than in the browser: the API returns 20 results per
- * page, so sorting client-side only ever reordered the current page while
- * appearing to rank everything.
+ * Returns a sorted copy of `movies`. An unrecognised query (including the
+ * empty string) returns the list untouched.
  */
-export const TMDB_SORT_BY: Record<string, string> = {
-	Alphabet: "original_title.asc",
-	Popularity: "popularity.desc",
-	"Release Date": "primary_release_date.desc",
-	Rating: "vote_average.desc",
-};
+export function getSortedMovies(query: string, movies: MovieType[]) {
+	if (query === "Alphabet") {
+		return [...movies].sort((a, b) =>
+			a.title.toLowerCase().localeCompare(b.title.toLowerCase()),
+		);
+	}
+	if (query === "Popularity") {
+		return [...movies].sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+	}
+	if (query === "Release Date") {
+		return [...movies].sort(
+			(a, b) =>
+				new Date(b.release_date ?? 0).getTime() -
+				new Date(a.release_date ?? 0).getTime(),
+		);
+	}
+	if (query === "Rating") {
+		return [...movies].sort((a, b) => b.vote_average - a.vote_average);
+	}
+	return movies;
+}
