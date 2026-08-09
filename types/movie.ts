@@ -8,8 +8,15 @@ export interface GenreType {
  * Supabase (watchlist, recent_movies) only carry these columns, so anything
  * that renders a card should accept this rather than the full TMDB shape.
  */
+export type MediaType = "movie" | "tv";
+
 export interface MovieSummary {
 	id: number;
+	/**
+	 * A film and a series can share the same numeric id — 550 is both — so a
+	 * title is only identified by the pair.
+	 */
+	media_type: MediaType;
 	title: string;
 	poster_path: string;
 	vote_average: number;
@@ -47,6 +54,7 @@ export interface WatchListRow {
 	id_supabase: string;
 	user_id: string;
 	movie_id: number;
+	media_type: MediaType;
 	title: string;
 	poster_path: string;
 	vote_average: number;
@@ -57,6 +65,7 @@ export interface RecentMovieRow {
 	id_supabase: string;
 	user_id: string;
 	movie_id: number;
+	media_type: MediaType;
 	title: string;
 	poster_path: string;
 	vote_average: number;
@@ -65,12 +74,16 @@ export interface RecentMovieRow {
 
 export function toMovieSummary(row: {
 	movie_id: number;
+	media_type?: MediaType | null;
 	title: string;
 	poster_path: string;
 	vote_average: number;
 }): MovieSummary {
 	return {
 		id: row.movie_id,
+		// Rows saved before series support carry no media_type; they were all
+		// films, so that is the safe default.
+		media_type: row.media_type ?? "movie",
 		title: row.title,
 		poster_path: row.poster_path,
 		vote_average: row.vote_average,
@@ -80,6 +93,7 @@ export function toMovieSummary(row: {
 export interface CommentType {
 	id: string;
 	movie_id: number;
+	media_type?: MediaType;
 	user_id: string;
 	username: string;
 	content: string;

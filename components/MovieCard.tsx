@@ -27,6 +27,7 @@ export default function MovieCard({
 			{
 				user_id: user.id,
 				movie_id: movie.id,
+				media_type: movie.media_type,
 				title: movie.title,
 				poster_path: movie.poster_path,
 				vote_average: movie.vote_average,
@@ -34,14 +35,14 @@ export default function MovieCard({
 				// does not re-fire, so without this the ordering never changes.
 				viewed_at: new Date().toISOString(),
 			},
-			{ onConflict: "user_id,movie_id" },
+			{ onConflict: "user_id,media_type,movie_id" },
 		);
 		if (error) console.error("Could not record recent view:", error.message);
 	}
 
 	return (
 		<div className="relative m-2">
-			<Link href={`/movie/${movie.id}`} onClick={recordRecentView}>
+			<Link href={`/title/${movie.media_type}/${movie.id}`} onClick={recordRecentView}>
 				<div className="cursor-pointer hover:scale-95 transition-transform duration-200 w-full max-w-62.5 mx-auto">
 					<img src={imageUrl} alt={movie.title} className="rounded-lg" />
 					<div className="flex justify-between items-center gap-4 mb-1">
