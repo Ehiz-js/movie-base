@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendWatchlistEmail } from "@/lib/sendEmail";
 import { getUserFromRequest } from "@/lib/supabaseServer";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
 	try {
@@ -15,6 +16,19 @@ export async function POST(req: Request) {
 		const user = await getUserFromRequest(req);
 		if (!user?.email) {
 			return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+		}
+
+		// Keyed on the verified user, so the limit cannot be sidestepped by
+		// changing IP or clearing cookies.
+		const { allowed, retryAfterSeconds } = rateLimit(`send_email:${user.id}`, {
+			limit: 10,
+			windowMs: 60 * 60 * 1000,
+		});
+		if (!allowed) {
+			return NextResponse.json(
+				{ error: "Too many emails. Please try again later." },
+				{ status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
+			);
 		}
 
 		await sendWatchlistEmail(user.email, {
