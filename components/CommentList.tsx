@@ -47,6 +47,7 @@ export default function CommentList({
 					key={comment.id}
 					username={comment.username}
 					content={comment.content}
+					createdAt={comment.created_at}
 				/>
 			))}
 		</div>
