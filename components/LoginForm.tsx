@@ -108,6 +108,14 @@ export default function LoginForm() {
 						Log in
 					</button>
 					<p>
+						<Link
+							href="/auth/forgot-password"
+							className="hover:underline underline-offset-3 text-(--purple-dark) hover:text-(--purple-light) transition-all duration-200"
+						>
+							Forgot your password?
+						</Link>
+					</p>
+					<p>
 						Dont have an account? Sign up{" "}
 						<Link
 							href="/auth/signup"
