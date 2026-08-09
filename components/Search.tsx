@@ -2,6 +2,7 @@
 import { FaSearch } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
 import useDebounce from "@/hooks/useDebounce";
+import { useRouter } from "next/navigation";
 import SearchResultList from "./SearchResultList";
 import { MovieType } from "@/types/movie";
 
@@ -12,6 +13,17 @@ export default function Search() {
 	const [open, setOpen] = useState(true);
 	const searchListRef = useRef<HTMLDivElement>(null);
 	const debounceQuery = useDebounce(searchQuery, 500);
+	const router = useRouter();
+
+	// Enter goes to the full results page; the dropdown only ever previews the
+	// first few matches.
+	function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+		e.preventDefault();
+		const query = searchQuery.trim();
+		if (!query) return;
+		setOpen(false);
+		router.push(`/search?query=${encodeURIComponent(query)}`);
+	}
 
 	useEffect(() => {
 		let cancelled = false;
@@ -65,7 +77,10 @@ export default function Search() {
 
 	return (
 		<div className="relative" ref={searchListRef}>
-			<div className="flex flex-row items-center bg-white p-2 rounded-md m-auto">
+			<form
+				onSubmit={handleSubmit}
+				className="flex flex-row items-center bg-white p-2 rounded-md m-auto"
+			>
 				<input
 					type="text"
 					placeholder="Find a Movie..."
@@ -74,13 +89,21 @@ export default function Search() {
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 				/>
-				<FaSearch style={{ color: "#5b21b6" }} />
-			</div>
+				<button
+					type="submit"
+					aria-label="Search"
+					className="cursor-pointer"
+				>
+					<FaSearch style={{ color: "#5b21b6" }} />
+				</button>
+			</form>
 			{open && debounceQuery && (
 				<div>
 					<SearchResultList
 						searchResults={searchResults.slice(0, 5)}
 						isLoading={isLoading}
+						totalResults={searchResults.length}
+						query={debounceQuery}
 					/>
 				</div>
 			)}

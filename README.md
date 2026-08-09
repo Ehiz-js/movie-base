@@ -21,7 +21,7 @@ for what came from where and what changed in the process.
 | Suggested-movies carousel on the movie page | task 6 |
 | Comment thread per movie | task 7 |
 | Recently-viewed strip (last 4, past 24h) | task 8 |
-| Onboarding profile at `/onboarding` | task 9 |
+| Profile with a display name at `/onboarding` | task 9 |
 | Confirmation email when adding to the watchlist | task 10 |
 
 Plus email/password auth (Supabase) and a 404 page, from the base app.
@@ -69,7 +69,7 @@ app/
   page.tsx                 Home: recently viewed + genre/sort/paginated grid
   movie/[id]/page.tsx      Movie detail + suggested carousel + comments
   movielist/page.tsx       The signed-in user's watchlist
-  onboarding/page.tsx      Profile setup
+  onboarding/page.tsx      Profile (display name)
   auth/login, auth/signup  Supabase email/password auth
   not-found.tsx            404
   api/movies/*             TMDB proxy routes (server-side, key never exposed)

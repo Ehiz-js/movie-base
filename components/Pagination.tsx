@@ -4,11 +4,13 @@ import Button from "./Button";
 
 export default function Pagination({
 	pageNum,
+	totalPages,
 	hasNext,
 	incrementPageNum,
 	decrementPageNum,
 }: {
 	pageNum: number;
+	totalPages: number;
 	hasNext: boolean;
 	incrementPageNum: () => void;
 	decrementPageNum: () => void;
@@ -20,7 +22,9 @@ export default function Pagination({
 					<FaChevronCircleLeft />
 				</Button>
 			)}
-			Page {pageNum}
+			<span className="tabular-nums">
+				Page {pageNum} of {totalPages}
+			</span>
 			{hasNext && (
 				<Button onClick={incrementPageNum}>
 					<FaChevronCircleRight />
