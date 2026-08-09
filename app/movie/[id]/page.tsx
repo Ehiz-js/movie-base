@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CommentSection from "@/components/CommentSection";
 import { SuggestedMovies } from "@/components/SuggestedMovies";
@@ -26,6 +27,37 @@ async function getSuggested(movie: MovieType): Promise<MovieType[]> {
 		console.error(error);
 		return [];
 	}
+}
+
+/**
+ * Next dedupes identical fetches within a render, so calling getMovie here as
+ * well as in the page does not cost a second TMDB request.
+ */
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+	const { id } = await params;
+	const movie = await getMovie(id);
+	if (!movie) return { title: "Movie not found" };
+
+	const year = movie.release_date ? ` (${movie.release_date.slice(0, 4)})` : "";
+	const description =
+		movie.overview?.slice(0, 200) ?? `Details and reviews for ${movie.title}.`;
+
+	return {
+		title: `${movie.title}${year}`,
+		description,
+		openGraph: {
+			title: `${movie.title}${year}`,
+			description,
+			type: "video.movie",
+			images: movie.poster_path
+				? [`https://image.tmdb.org/t/p/w780${movie.poster_path}`]
+				: undefined,
+		},
+	};
 }
 
 export default async function MoviePage({

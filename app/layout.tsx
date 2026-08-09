@@ -16,7 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Movie Base",
+	title: {
+		default: "Movie Base",
+		// Page titles render as "Fight Club (1999) · Movie Base".
+		template: "%s · Movie Base",
+	},
 	description: "Browse, search and track movies powered by TMDB.",
 };
 
