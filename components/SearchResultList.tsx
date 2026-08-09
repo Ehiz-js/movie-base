@@ -1,13 +1,18 @@
 import { MovieType } from "@/types/movie";
 import SearchResult from "./SearchResult";
 import { Spinner } from "./ui/spinner";
+import Link from "next/link";
 
 export default function SearchResultList({
 	searchResults,
 	isLoading,
+	totalResults,
+	query,
 }: {
 	searchResults: MovieType[];
 	isLoading: boolean;
+	totalResults: number;
+	query: string;
 }) {
 	return (
 		<ul className="absolute top-full left-0 bg-background rounded-md mt-5 z-50 max-h-100 overflow-y-auto min-w-sm border border-(--purple-light)">
@@ -22,11 +27,24 @@ export default function SearchResultList({
 					</p>
 				</div>
 			) : (
-				searchResults.map((movie: MovieType) => (
-					<li key={movie.id}>
-						<SearchResult movie={movie} />
-					</li>
-				))
+				<>
+					{searchResults.map((movie: MovieType) => (
+						<li key={movie.id}>
+							<SearchResult movie={movie} />
+						</li>
+					))}
+					{/* The dropdown previews five; the rest live on the results page. */}
+					{totalResults > searchResults.length && (
+						<li>
+							<Link
+								href={`/search?query=${encodeURIComponent(query)}`}
+								className="block p-3 text-center text-sm font-semibold text-(--purple-dark) hover:bg-gray-950 transition-all duration-200"
+							>
+								See all {totalResults} results
+							</Link>
+						</li>
+					)}
+				</>
 			)}
 		</ul>
 	);
