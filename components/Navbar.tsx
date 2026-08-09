@@ -40,6 +40,12 @@ export default function Navbar() {
 						<Link href="/movielist">My List</Link>
 					</li>
 
+					{session && (
+						<li className="hover:text-(--purple-dark) transition-all ease-in duration-200">
+							<Link href="/onboarding">Profile</Link>
+						</li>
+					)}
+
 					<li>
 						<Button
 							onClick={

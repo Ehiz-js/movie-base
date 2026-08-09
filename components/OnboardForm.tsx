@@ -1,6 +1,7 @@
 "use client";
 import { supabase } from "@/lib/supabase";
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Spinner } from "./ui/spinner";
 import { useRouter } from "next/navigation";
 import { Input } from "./ui/input";
@@ -33,7 +34,44 @@ export default function OnboardForm() {
 	const [formData, setFormData] = useState<FormType>(initialData);
 	const [error, setError] = useState<FormErrorsType>({});
 	const [isLoading, setIsLoading] = useState(false);
-	const { user, refreshProfile } = useAuth();
+	const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+	const { user, session, refreshProfile } = useAuth();
+	const userId = user?.id;
+
+	// The profile is editable, not write-once, so an existing one is loaded
+	// back into the form rather than presented as blank.
+	useEffect(() => {
+		let cancelled = false;
+		async function loadProfile() {
+			if (!userId) {
+				if (!cancelled) setIsLoadingProfile(false);
+				return;
+			}
+			const { data, error } = await supabase
+				.from("profiles")
+				.select("username, selected_genres, mature, selected_language")
+				.eq("user_id", userId)
+				.maybeSingle();
+
+			if (cancelled) return;
+			if (error) console.error(error);
+			if (data) {
+				setFormData({
+					username: data.username ?? "",
+					selectedGenreList: (data.selected_genres ?? []) as GenreType[],
+					mature: data.mature ?? false,
+					selectedLanguage: data.selected_language
+						? ({ english_name: data.selected_language } as LanguageType)
+						: null,
+				});
+			}
+			setIsLoadingProfile(false);
+		}
+		loadProfile();
+		return () => {
+			cancelled = true;
+		};
+	}, [userId]);
 
 	async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -56,7 +94,9 @@ export default function OnboardForm() {
 		}
 
 		setIsLoading(true);
-		const { error: insertError } = await supabase.from("profiles").insert([
+		// Upsert, not insert: profiles.user_id is unique, so re-submitting the
+		// form to change a username used to fail on the constraint.
+		const { error: saveError } = await supabase.from("profiles").upsert(
 			{
 				user_id: user.id,
 				username: username.trim(),
@@ -64,17 +104,46 @@ export default function OnboardForm() {
 				mature,
 				selected_language: selectedLanguage?.english_name,
 			},
-		]);
+			{ onConflict: "user_id" },
+		);
 
-		if (insertError) {
+		if (saveError) {
 			setIsLoading(false);
-			setError({ form: insertError.message });
+			setError({ form: saveError.message });
 			return;
 		}
 
 		await refreshProfile(user.id);
 		setIsLoading(false);
 		router.push("/");
+	}
+
+	if (!session) {
+		return (
+			<div className="flex flex-col min-h-screen items-center justify-center gap-4 px-6 text-center">
+				<h1 className="uppercase font-semibold text-(--purple-dark)">
+					Profile
+				</h1>
+				<p>
+					Please log in{" "}
+					<Link
+						href="/auth/login"
+						className="hover:underline underline-offset-3 text-(--purple-dark) hover:text-(--purple-light) transition-all duration-200"
+					>
+						here
+					</Link>{" "}
+					to set up your profile.
+				</p>
+			</div>
+		);
+	}
+
+	if (isLoadingProfile) {
+		return (
+			<div className="flex min-h-screen items-center justify-center">
+				<Spinner className="text-purple-600" />
+			</div>
+		);
 	}
 
 	return (
@@ -87,7 +156,7 @@ export default function OnboardForm() {
 			) : (
 				<>
 					<div className="w-60 flex flex-col items-center text-(--purple-dark) uppercase font-semibold">
-						<h1>Complete your profile</h1>
+						<h1>Your profile</h1>
 						<hr className="mt-4 border-t border-(--purple-dark) w-full" />
 					</div>
 					<div className="flex flex-col items-start gap-2 w-60">
