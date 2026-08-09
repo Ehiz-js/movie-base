@@ -79,7 +79,7 @@ export default function Search() {
 		<div className="relative" ref={searchListRef}>
 			<form
 				onSubmit={handleSubmit}
-				className="flex flex-row items-center bg-white p-2 rounded-md m-auto"
+				className="flex flex-row items-center gap-2 bg-white p-2 rounded-md w-fit"
 			>
 				<input
 					type="text"
