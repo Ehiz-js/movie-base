@@ -11,7 +11,7 @@ export default function RecentMovieList({
 			<div className="flex w-full flex-col justify-center items-center">
 				<h3 className="text-center m-5 uppercase">Recently viewed movies</h3>
 
-				<ul className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-350">
+				<ul className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-350 px-4 mx-auto">
 					{recentMovies.map((movie) => (
 						<li key={movie.id}>
 							<MovieCard movie={movie} />
