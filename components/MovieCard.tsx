@@ -40,12 +40,12 @@ export default function MovieCard({
 	}
 
 	return (
-		<div className="relative">
+		<div className="relative m-2">
 			<Link href={`/movie/${movie.id}`} onClick={recordRecentView}>
 				<div className="cursor-pointer hover:scale-95 transition-transform duration-200 w-full max-w-62.5 mx-auto">
 					<img src={imageUrl} alt={movie.title} className="rounded-lg" />
 					<div className="flex justify-between items-center gap-4 mb-1">
-						<h2 className="mt-2 font-semibold">{movie.title}</h2>
+						<h2 className="mt-2 font-semibold text-sm">{movie.title}</h2>
 						<div className="flex items-center gap-2">
 							<FaStar className="text-(--purple-dark) mt-1" />
 							<span className="mt-2 font-semibold">

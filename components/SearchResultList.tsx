@@ -15,7 +15,17 @@ export default function SearchResultList({
 	query: string;
 }) {
 	return (
-		<ul className="absolute top-full left-0 bg-background rounded-md mt-5 z-50 max-h-100 overflow-y-auto min-w-sm border border-(--purple-light)">
+		<ul
+			className="absolute top-full left-0 bg-background rounded-md mt-5 z-50 max-h-100 overflow-y-auto min-w-sm border border-(--purple-light)
+  [&::-webkit-scrollbar]:w-1.5 
+  [&::-webkit-scrollbar-track]:bg-transparent 
+  [&::-webkit-scrollbar-thumb]:bg-(--purple-dark) 
+  [&::-webkit-scrollbar-thumb]:rounded-full 
+  hover:[&::-webkit-scrollbar-thumb]:bg-purple-500
+  /* Firefox scrollbar styles */
+  [scrollbar-width:thick] 
+  [scrollbar-color:var(--purple-dark)_transparent]"
+		>
 			{isLoading ? (
 				<div className="flex w-full min-h-100 items-center justify-center">
 					<Spinner className="text-purple-600" />

@@ -127,20 +127,28 @@ export default function Home() {
 			)}
 			<section className={`mb-12 ${recentMovies.length > 0 ? "" : "mt-24"}`}>
 				<div className="flex w-full flex-col justify-center items-center">
-					<div className="flex flex-col md:flex-row items-center w-full justify-around gap-3">
-						<h3 className="text-center m-5 uppercase">
+					<div className="flex flex-row items-center w-375px justify-between gap-1 sm:gap-3 p-2 sm:p-4 overflow-hidden">
+						{/* TITLE: Allowed to shrink and truncate if it gets too long */}
+						<h3 className="uppercase text-xs sm:text-sm md:text-base font-medium truncate min-w-0 pr-2">
 							{genreId
 								? genreList.find((g) => String(g.id) === genreId)?.name
 								: "Popular"}{" "}
 							movies
 						</h3>
-						<div className="flex flex-col sm:flex-row gap-3">
-							<GenreSelect
-								handleClick={filterMovies}
-								genreList={genreList}
-								genreId={genreId}
-							/>
-							<SortSelect handleClick={setSortValue} />
+
+						{/* DROPDOWNS: Tighter gap, forced to stay in bounds */}
+						<div className="flex flex-row gap-1 sm:gap-2 flex-shrink-0">
+							{/* You might need to add className props to these components depending on how they are built inside */}
+							<div className="w-[100px] sm:w-auto">
+								<GenreSelect
+									handleClick={filterMovies}
+									genreList={genreList}
+									genreId={genreId}
+								/>
+							</div>
+							<div className="w-[90px] sm:w-auto">
+								<SortSelect handleClick={setSortValue} />
+							</div>
 						</div>
 					</div>
 
@@ -155,7 +163,7 @@ export default function Home() {
 							No movies found.
 						</p>
 					) : (
-						<ul className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-350">
+						<ul className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-350px px-4 mx-auto">
 							{visibleMovies.map((movie: MovieType) => (
 								<li key={movie.id}>
 									<MovieCard movie={movie} />
