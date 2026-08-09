@@ -1,14 +1,19 @@
-"use client";
-import { useRef } from "react";
 import Link from "next/link";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaChevronRight } from "react-icons/fa";
+import {
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+	CarouselNext,
+	CarouselPrevious,
+} from "@/components/ui/carousel";
 import MovieCard from "./MovieCard";
 import { MovieType } from "@/types/movie";
 
 /**
- * One horizontally scrolling row. Scrolling is native — it keeps touch and
- * trackpad behaviour correct on every device — with buttons layered on top for
- * mouse users, who have nothing to swipe with.
+ * One row of the home page: a heading, a link to the full grid, and a
+ * carousel of titles. Uses the same carousel as the suggested-movies row so
+ * every slider on the site behaves identically.
  */
 export default function TitleRow({
 	heading,
@@ -19,20 +24,11 @@ export default function TitleRow({
 	moreHref: string;
 	titles: MovieType[];
 }) {
-	const scroller = useRef<HTMLUListElement>(null);
-
-	function scroll(direction: 1 | -1) {
-		const el = scroller.current;
-		if (!el) return;
-		// Page by most of the visible width, leaving a sliver for continuity.
-		el.scrollBy({ left: direction * el.clientWidth * 0.85, behavior: "smooth" });
-	}
-
 	if (titles.length === 0) return null;
 
 	return (
-		<section className="group/row mb-10">
-			<div className="flex items-center justify-between gap-4 mb-3 px-4 sm:px-6 xl:px-16">
+		<section className="mb-10">
+			<div className="flex items-center justify-between gap-4 mb-3 px-10 sm:px-12 xl:px-20">
 				<h2 className="flex items-center gap-2 text-lg sm:text-xl font-semibold">
 					<span aria-hidden className="h-5 w-1 rounded bg-(--purple-dark)" />
 					{heading}
@@ -45,39 +41,23 @@ export default function TitleRow({
 				</Link>
 			</div>
 
-			<div className="relative">
-				<ul
-					ref={scroller}
-					className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory px-4 sm:px-6 xl:px-16 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-				>
+			<Carousel
+				opts={{ align: "start", slidesToScroll: "auto" }}
+				className="w-full max-w-[78vw] sm:max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-[85rem] mx-auto"
+			>
+				<CarouselContent className="-ml-2 md:-ml-4">
 					{titles.map((title) => (
-						<li
+						<CarouselItem
 							key={`${title.media_type}-${title.id}`}
-							className="snap-start shrink-0 w-32 sm:w-40 md:w-44 lg:w-48"
+							className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/6"
 						>
 							<MovieCard movie={title} />
-						</li>
+						</CarouselItem>
 					))}
-				</ul>
-
-				{/* Pointer-only: touch devices scroll the row directly. */}
-				<button
-					type="button"
-					aria-label={`Scroll ${heading} left`}
-					onClick={() => scroll(-1)}
-					className="hidden md:grid place-items-center absolute left-2 top-1/3 size-9 rounded-full bg-black/70 text-white opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity duration-200 cursor-pointer"
-				>
-					<FaChevronLeft />
-				</button>
-				<button
-					type="button"
-					aria-label={`Scroll ${heading} right`}
-					onClick={() => scroll(1)}
-					className="hidden md:grid place-items-center absolute right-2 top-1/3 size-9 rounded-full bg-black/70 text-white opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity duration-200 cursor-pointer"
-				>
-					<FaChevronRight />
-				</button>
-			</div>
+				</CarouselContent>
+				<CarouselPrevious className="-left-6 md:-left-12 cursor-pointer text-(--purple-dark)" />
+				<CarouselNext className="-right-6 md:-right-12 cursor-pointer text-(--purple-dark)" />
+			</Carousel>
 		</section>
 	);
 }
