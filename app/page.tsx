@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MovieCard from "@/components/MovieCard";
 import GenreSelect, { ALL_GENRES } from "@/components/GenreSelect";
 import SortSelect from "@/components/SortSelect";
@@ -8,6 +8,7 @@ import RecentMovieList from "@/components/RecentMovieList";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { getSortedMovies } from "@/lib/tmdb";
 import {
 	GenreType,
 	MovieSummary,
@@ -47,18 +48,18 @@ export default function Home() {
 		fetchGenres();
 	}, []);
 
-	// One fetch drives the grid. Genre, sort and page all go to TMDB together,
-	// so they compose instead of overwriting each other.
+	// One fetch drives the grid. Which endpoint it hits depends on whether a
+	// genre is selected, so filtering and pagination stay in step instead of
+	// overwriting each other.
 	useEffect(() => {
 		let cancelled = false;
 
 		async function fetchMovies() {
 			setIsLoading(true);
 			setError("");
-			const params = new URLSearchParams({ page: String(pageNum) });
-			if (genreId) params.set("genreId", genreId);
-			if (sortValue) params.set("sort", sortValue);
-			const url = `/api/movies/discover?${params}`;
+			const url = genreId
+				? `/api/movies/filtered_movie_list?genreId=${genreId}&page=${pageNum}`
+				: `/api/movies/movie_page?page=${pageNum}`;
 			try {
 				const res = await fetch(url);
 				if (!res.ok) throw new Error(`Request failed (${res.status})`);
@@ -79,7 +80,7 @@ export default function Home() {
 		return () => {
 			cancelled = true;
 		};
-	}, [genreId, sortValue, pageNum]);
+	}, [genreId, pageNum]);
 
 	useEffect(() => {
 		if (!userId) {
@@ -107,13 +108,15 @@ export default function Home() {
 		fetchRecent();
 	}, [userId]);
 
+	// Sorting is derived rather than written back into `movies`, so switching
+	// sort order never destroys the order the API returned.
+	const visibleMovies = useMemo(
+		() => getSortedMovies(sortValue, movies),
+		[sortValue, movies],
+	);
+
 	function filterMovies(nextGenreId: string) {
 		setGenreId(nextGenreId === ALL_GENRES ? "" : nextGenreId);
-		setPageNum(1);
-	}
-
-	function sortMovies(nextSort: string) {
-		setSortValue(nextSort);
 		setPageNum(1);
 	}
 
@@ -137,7 +140,7 @@ export default function Home() {
 								genreList={genreList}
 								genreId={genreId}
 							/>
-							<SortSelect handleClick={sortMovies} sortValue={sortValue} />
+							<SortSelect handleClick={setSortValue} />
 						</div>
 					</div>
 
@@ -147,13 +150,13 @@ export default function Home() {
 						</div>
 					) : error ? (
 						<p className="text-red-600 min-h-100 flex items-center">{error}</p>
-					) : movies.length === 0 ? (
+					) : visibleMovies.length === 0 ? (
 						<p className="text-(--purple-dark) min-h-100 flex items-center uppercase font-semibold">
 							No movies found.
 						</p>
 					) : (
 						<ul className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-350">
-							{movies.map((movie: MovieType) => (
+							{visibleMovies.map((movie: MovieType) => (
 								<li key={movie.id}>
 									<MovieCard movie={movie} />
 								</li>
