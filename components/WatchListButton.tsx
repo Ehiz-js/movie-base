@@ -1,10 +1,10 @@
 "use client";
 import { MovieType } from "@/types/movie";
-import { FaPlusSquare } from "react-icons/fa";
+import { FaCheckSquare, FaPlusSquare, FaTrash } from "react-icons/fa";
 import Button from "./Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Spinner } from "./ui/spinner";
 
 export default function WatchListButton({ movie }: { movie: MovieType }) {
@@ -12,6 +12,42 @@ export default function WatchListButton({ movie }: { movie: MovieType }) {
 	const [errorMsg, setErrorMsg] = useState("");
 	const [successMsg, setSuccessMsg] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
+	// null while we do not yet know; the button stays in a neutral state until
+	// the lookup resolves rather than claiming the movie is unsaved.
+	const [savedRowId, setSavedRowId] = useState<string | null>(null);
+	const [isChecking, setIsChecking] = useState(true);
+
+	const userId = user?.id;
+	const movieId = movie.id;
+
+	useEffect(() => {
+		if (!userId) {
+			setSavedRowId(null);
+			setIsChecking(false);
+			return;
+		}
+
+		let cancelled = false;
+		async function checkSaved() {
+			setIsChecking(true);
+			const { data, error } = await supabase
+				.from("watchlist")
+				.select("id_supabase")
+				.eq("user_id", userId)
+				.eq("movie_id", movieId)
+				.maybeSingle();
+
+			if (cancelled) return;
+			if (error) console.error(error);
+			setSavedRowId(data?.id_supabase ?? null);
+			setIsChecking(false);
+		}
+		checkSaved();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [userId, movieId]);
 
 	/**
 	 * Saves the movie, then sends the confirmation email. The save is what the
@@ -29,15 +65,19 @@ export default function WatchListButton({ movie }: { movie: MovieType }) {
 
 		setIsLoading(true);
 		try {
-			const { error } = await supabase.from("watchlist").insert([
-				{
-					user_id: user?.id,
-					movie_id: movie.id,
-					title: movie.title,
-					poster_path: movie.poster_path,
-					vote_average: movie.vote_average,
-				},
-			]);
+			const { data, error } = await supabase
+				.from("watchlist")
+				.insert([
+					{
+						user_id: user?.id,
+						movie_id: movie.id,
+						title: movie.title,
+						poster_path: movie.poster_path,
+						vote_average: movie.vote_average,
+					},
+				])
+				.select("id_supabase")
+				.single();
 
 			if (error) {
 				setErrorMsg(
@@ -48,7 +88,8 @@ export default function WatchListButton({ movie }: { movie: MovieType }) {
 				return;
 			}
 
-			setSuccessMsg("Movie added successfully!");
+			setSavedRowId(data.id_supabase);
+			setSuccessMsg("Added to your list.");
 
 			try {
 				const res = await fetch("/api/send_email", {
@@ -70,13 +111,46 @@ export default function WatchListButton({ movie }: { movie: MovieType }) {
 		}
 	}
 
+	async function removeFromWatchList() {
+		if (!savedRowId) return;
+		setErrorMsg("");
+		setSuccessMsg("");
+		setIsLoading(true);
+		try {
+			const { error } = await supabase
+				.from("watchlist")
+				.delete()
+				.eq("id_supabase", savedRowId);
+
+			if (error) {
+				setErrorMsg(error.message);
+				return;
+			}
+			setSavedRowId(null);
+			setSuccessMsg("Removed from your list.");
+		} finally {
+			setIsLoading(false);
+		}
+	}
+
+	const isSaved = savedRowId !== null;
+
 	return (
 		<div>
-			<Button onClick={addToWatchList} disabled={isLoading}>
-				{isLoading ? (
+			<Button
+				onClick={isSaved ? removeFromWatchList : addToWatchList}
+				disabled={isLoading || isChecking}
+			>
+				{isLoading || isChecking ? (
 					<div className="min-w-35 flex justify-center">
 						<Spinner className="size-5" />
 					</div>
+				) : isSaved ? (
+					<>
+						<FaCheckSquare />
+						In your list
+						<FaTrash className="ml-2 size-3.5" />
+					</>
 				) : (
 					<>
 						<FaPlusSquare />
