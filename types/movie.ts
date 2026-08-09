@@ -3,12 +3,6 @@ export interface GenreType {
 	name: string;
 }
 
-export interface LanguageType {
-	iso_639_1: string;
-	english_name: string;
-	name: string;
-}
-
 /**
  * The minimum a movie needs to render as a card. Rows coming back from
  * Supabase (watchlist, recent_movies) only carry these columns, so anything

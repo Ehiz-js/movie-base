@@ -166,6 +166,7 @@ export default function Home() {
 
 					<Pagination
 						pageNum={pageNum}
+						totalPages={MAX_PAGES}
 						hasNext={pageNum < MAX_PAGES}
 						incrementPageNum={() =>
 							setPageNum((prev) => Math.min(prev + 1, MAX_PAGES))
