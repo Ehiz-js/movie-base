@@ -58,12 +58,14 @@ export default function RecentMovieList() {
 	if (recent.length === 0) return null;
 
 	return (
-		<section className="mb-10 px-4 sm:px-6 xl:px-16">
+		<section className="mb-10">
+			{/* Padding and width mirror TitleRow so this section lines up with the
+			    carousels below it. */}
 			<button
 				type="button"
 				onClick={() => setOpen((current) => !current)}
 				aria-expanded={open}
-				className="flex items-center gap-2 text-lg sm:text-xl font-semibold cursor-pointer hover:text-(--purple-dark) transition-colors duration-200"
+				className="flex items-center gap-2 mb-3 px-10 sm:px-12 xl:px-20 text-lg sm:text-xl font-semibold cursor-pointer hover:text-(--purple-dark) transition-colors duration-200"
 			>
 				<span aria-hidden className="h-5 w-1 rounded bg-(--purple-dark)" />
 				Recently viewed
@@ -78,7 +80,7 @@ export default function RecentMovieList() {
 			</button>
 
 			{open && (
-				<ul className="mt-4 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+				<ul className="w-full max-w-[78vw] sm:max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-[85rem] mx-auto grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-4">
 					{recent.map((title) => (
 						<li key={`${title.media_type}-${title.id}`}>
 							<MovieCard movie={title} />
