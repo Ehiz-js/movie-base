@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaRegClock, FaStar } from "react-icons/fa";
 import { Spinner } from "./ui/spinner";
@@ -125,10 +126,12 @@ export default function SeasonBrowser({
 			{selected && !isLoading && (
 				<article className="mt-5 flex flex-col sm:flex-row gap-4 border-t border-white/10 pt-5">
 					{selected.still_path ? (
-						<img
+						<Image
 							src={`https://image.tmdb.org/t/p/w300${selected.still_path}`}
 							alt=""
-							className="w-full sm:w-56 shrink-0 rounded-lg object-cover"
+							width={224}
+							height={126}
+							className="w-full sm:w-56 h-auto shrink-0 rounded-lg object-cover"
 						/>
 					) : (
 						<div className="grid h-32 w-full sm:w-56 shrink-0 place-items-center rounded-lg bg-black/40 text-xs text-gray-500">

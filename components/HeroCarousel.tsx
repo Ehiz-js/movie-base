@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { FaChevronLeft, FaChevronRight, FaStar } from "react-icons/fa";
 import { MovieType } from "@/types/movie";
@@ -46,12 +47,15 @@ export default function HeroCarousel({ titles }: { titles: MovieType[] }) {
 			onMouseLeave={() => setPaused(false)}
 		>
 			{titles.map((title, i) => (
-				<img
+				<Image
 					key={`${title.media_type}-${title.id}`}
-					src={`https://image.tmdb.org/t/p/original${title.backdrop_path}`}
+					src={`https://image.tmdb.org/t/p/w1280${title.backdrop_path}`}
 					alt=""
 					aria-hidden={i !== index}
-					className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+					fill
+					// The first slide is the largest thing on screen at load.
+					priority={i === 0}
+					className={`object-cover transition-opacity duration-700 ${
 						i === index ? "opacity-100" : "opacity-0"
 					}`}
 				/>

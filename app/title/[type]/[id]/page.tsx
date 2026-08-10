@@ -87,7 +87,7 @@ export default async function TitlePage({
 		vote_average,
 	} = movie;
 	const posterUrl = `https://image.tmdb.org/t/p/w500${poster_path}`;
-	const backdropUrl = `https://image.tmdb.org/t/p/original${backdrop_path}`;
+	const backdropUrl = `https://image.tmdb.org/t/p/w1280${backdrop_path}`;
 	const releaseYear = release_date ? release_date.slice(0, 4) : "N/A";
 	const rating = Number.isFinite(vote_average)
 		? vote_average.toFixed(1)
@@ -97,10 +97,12 @@ export default async function TitlePage({
 		<>
 			<section className="relative">
 				<div className="absolute inset-0 h-[70vh]">
-					<img
+					<Image
 						src={backdropUrl}
 						alt=""
-						className="w-full h-full object-cover"
+						fill
+						priority
+						className="object-cover"
 					/>
 					<div className="absolute inset-0 bg-linear-to-t from-(--background) via-(--background)/80 to-black/50" />
 				</div>
