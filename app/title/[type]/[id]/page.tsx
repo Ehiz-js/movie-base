@@ -6,10 +6,8 @@ import CommentSection from "@/components/CommentSection";
 import { SuggestedMovies } from "@/components/SuggestedMovies";
 import WatchListButton from "@/components/WatchListButton";
 import { fetchSeason, fetchSuggested, fetchTitleDetail } from "@/lib/titles";
-import SeasonBrowser from "@/components/SeasonBrowser";
-import TrailerPlayer from "@/components/TrailerPlayer";
 import WatchProvidersRow from "@/components/WatchProvidersRow";
-import { MediaType, MovieType } from "@/types/movie";
+import { MediaType } from "@/types/movie";
 import MediaSection from "@/components/MediaSection";
 
 function parseMediaType(value: string): MediaType | null {
