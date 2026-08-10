@@ -15,11 +15,13 @@ export default function SeasonBrowser({
 	seasons,
 	initialSeason,
 	initialEpisodes,
+	onEpisodeChange,
 }: {
 	tvId: number;
 	seasons: SeasonSummary[];
 	initialSeason: number;
 	initialEpisodes: EpisodeType[];
+	onEpisodeChange: (season: number, episode: number) => void;
 }) {
 	const [seasonNumber, setSeasonNumber] = useState(initialSeason);
 	const [episodes, setEpisodes] = useState<EpisodeType[]>(initialEpisodes);
@@ -106,7 +108,10 @@ export default function SeasonBrowser({
 								<button
 									key={episode.id}
 									type="button"
-									onClick={() => setSelectedId(episode.id)}
+									onClick={() => {
+										setSelectedId(episode.id); // Updates the UI preview at the bottom
+										onEpisodeChange(seasonNumber, episode.episode_number); // Updates the player!
+									}}
 									aria-pressed={active}
 									title={episode.name}
 									className={`grid h-10 place-items-center rounded-md text-sm font-semibold tabular-nums cursor-pointer transition-colors duration-200 ${
