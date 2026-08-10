@@ -7,7 +7,7 @@ import {
 	VideoType,
 	WatchProviders,
 } from "@/types/movie";
-import { findGenre, genreNamesForTmdbId, type GenreMapping } from "@/lib/genres";
+import { findGenre, genreNamesForTmdbId } from "@/lib/genres";
 
 /**
  * TMDB's series payloads use different field names for the same ideas:
