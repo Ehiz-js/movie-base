@@ -139,36 +139,55 @@ export async function fetchTitle(
 	}
 }
 
+/**
+ * TMDB reads a comma in `with_genres` as AND and a pipe as OR. Suggestions use
+ * AND: a title matching every genre of the one being viewed is actually
+ * related, whereas OR degrades into "anything popular in any of these genres",
+ * which returns the same handful of blockbusters no matter what you opened.
+ *
+ * Capped because ANDing four or more genres matches almost nothing.
+ */
+const MAX_SUGGESTION_GENRES = 3;
+
 /** Other titles sharing this one's genres, blended across both media types. */
 export async function fetchSuggested(title: MovieType): Promise<MovieType[]> {
-	const ownGenreIds = title.genres?.map((genre) => genre.id) ?? [];
-	if (ownGenreIds.length === 0) return [];
-
-	// Translate this title's own TMDB genre ids into visible genre names, then
-	// back out to the ids each side uses — so a sci-fi film can suggest sci-fi
-	// series and vice versa.
-	const names = new Set(
-		ownGenreIds.flatMap((id) => genreNamesForTmdbId(title.media_type, id)),
+	const ownIds = (title.genres?.map((genre) => genre.id) ?? []).slice(
+		0,
+		MAX_SUGGESTION_GENRES,
 	);
-	const mappings = [...names]
-		.map((name) => findGenre(name))
-		.filter((mapping): mapping is GenreMapping => Boolean(mapping));
+	if (ownIds.length === 0) return [];
 
-	const movieIds = [...new Set(mappings.flatMap((m) => m.movieIds))];
-	const tvIds = [...new Set(mappings.flatMap((m) => m.tvIds))];
+	const sameType = title.media_type;
+	const otherType: MediaType = sameType === "movie" ? "tv" : "movie";
 
-	const [movies, shows] = await Promise.all([
-		movieIds.length
-			? fetchSide("/discover/movie", "movie", {
-					with_genres: movieIds.join("|"),
+	// The other side rarely uses the same ids, so each genre is translated
+	// through the equivalence map — one id per genre, since ANDing a genre's
+	// several equivalents at once would match nothing.
+	const crossIds = [
+		...new Set(
+			ownIds.flatMap((id) =>
+				genreNamesForTmdbId(sameType, id).flatMap((name) => {
+					const mapping = findGenre(name);
+					if (!mapping) return [];
+					const ids = otherType === "movie" ? mapping.movieIds : mapping.tvIds;
+					return ids.slice(0, 1);
+				}),
+			),
+		),
+	].slice(0, MAX_SUGGESTION_GENRES);
+
+	const [same, cross] = await Promise.all([
+		fetchSide(`/discover/${sameType}`, sameType, {
+			with_genres: ownIds.join(","),
+		}),
+		crossIds.length
+			? fetchSide(`/discover/${otherType}`, otherType, {
+					with_genres: crossIds.join(","),
 				})
-			: Promise.resolve([]),
-		tvIds.length
-			? fetchSide("/discover/tv", "tv", { with_genres: tvIds.join("|") })
 			: Promise.resolve([]),
 	]);
 
-	return interleave(movies, shows).filter(
+	return interleave(same, cross).filter(
 		(suggestion) =>
 			!(
 				suggestion.id === title.id &&
