@@ -5,13 +5,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 import { Spinner } from "./ui/spinner";
+import { MediaType } from "@/types/movie";
 
 export default function CommentInputButton({
 	movieId,
+	mediaType,
 	comment,
 	onSubmitted,
 }: {
 	movieId: number;
+	mediaType: MediaType;
 	comment: string;
 	onSubmitted: () => void;
 }) {
@@ -41,6 +44,7 @@ export default function CommentInputButton({
 		const { error } = await supabase.from("comments").insert([
 			{
 				movie_id: movieId,
+				media_type: mediaType,
 				user_id: user?.id,
 				username: name,
 				content: comment.trim(),

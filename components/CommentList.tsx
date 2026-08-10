@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Comment from "./Comment";
-import { CommentType } from "@/types/movie";
+import { CommentType, MediaType } from "@/types/movie";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function CommentList({
 	movieId,
+	mediaType,
 	submitCount,
 }: {
 	movieId: number;
+	mediaType: MediaType;
 	submitCount: number;
 }) {
 	const { user } = useAuth();
@@ -26,6 +28,7 @@ export default function CommentList({
 				.from("comments")
 				.select("*")
 				.eq("movie_id", movieId)
+				.eq("media_type", mediaType)
 				.order("created_at", { ascending: false });
 
 			if (cancelled) return;
@@ -40,7 +43,7 @@ export default function CommentList({
 		return () => {
 			cancelled = true;
 		};
-	}, [movieId, submitCount]);
+	}, [movieId, mediaType, submitCount]);
 
 	async function deleteComment(id: string) {
 		setError("");

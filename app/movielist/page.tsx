@@ -35,6 +35,7 @@ export default function MovieListPage() {
 				setMovies(
 					((data ?? []) as WatchListRow[]).map((row) => ({
 						id: row.movie_id,
+						media_type: row.media_type ?? "movie",
 						title: row.title,
 						poster_path: row.poster_path,
 						vote_average: row.vote_average,

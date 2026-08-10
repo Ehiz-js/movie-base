@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import MovieCard from "@/components/MovieCard";
-import { tmdbFetch } from "@/lib/tmdbServer";
+import { searchTitles } from "@/lib/titles";
 import { MovieType } from "@/types/movie";
 
 export async function generateMetadata({
@@ -16,12 +16,8 @@ export async function generateMetadata({
 
 async function searchMovies(query: string): Promise<MovieType[] | null> {
 	try {
-		const data = await tmdbFetch<{ results: MovieType[] }>("/search/movie", {
-			query,
-		});
-		return data.results;
-	} catch (error) {
-		console.error(error);
+		return await searchTitles(query);
+	} catch {
 		return null;
 	}
 }

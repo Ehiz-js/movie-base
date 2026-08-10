@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { tmdbFetch } from "@/lib/tmdbServer";
-import { MovieType } from "@/types/movie";
+import { searchTitles } from "@/lib/titles";
 
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
@@ -14,10 +13,8 @@ export async function GET(request: Request) {
 	}
 
 	try {
-		const data = await tmdbFetch<{ results: MovieType[] }>("/search/movie", {
-			query,
-		});
-		return NextResponse.json(data.results);
+		// Multi-search, so films and series come back together.
+		return NextResponse.json(await searchTitles(query));
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json(
