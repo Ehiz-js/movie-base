@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FaStar } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaStar } from "react-icons/fa";
 import { MovieType } from "@/types/movie";
 
 const ROTATE_MS = 7000;
@@ -31,6 +31,10 @@ export default function HeroCarousel({ titles }: { titles: MovieType[] }) {
 	}, [paused, titles.length]);
 
 	if (titles.length === 0) return null;
+
+	// Wraps in both directions, so the arrows never dead-end.
+	const step = (direction: 1 | -1) =>
+		setIndex((current) => (current + direction + titles.length) % titles.length);
 
 	const active = titles[Math.min(index, titles.length - 1)];
 	const year = active.release_date?.slice(0, 4);
@@ -86,7 +90,28 @@ export default function HeroCarousel({ titles }: { titles: MovieType[] }) {
 				</div>
 			</div>
 
-			<div className="absolute bottom-6 right-4 sm:right-6 xl:right-16 z-1 flex gap-2">
+			{titles.length > 1 && (
+				<>
+					<button
+						type="button"
+						aria-label="Previous title"
+						onClick={() => step(-1)}
+						className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-1 grid place-items-center size-10 rounded-full bg-black/50 hover:bg-(--purple-dark) text-white cursor-pointer transition-colors duration-200"
+					>
+						<FaChevronLeft />
+					</button>
+					<button
+						type="button"
+						aria-label="Next title"
+						onClick={() => step(1)}
+						className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-1 grid place-items-center size-10 rounded-full bg-black/50 hover:bg-(--purple-dark) text-white cursor-pointer transition-colors duration-200"
+					>
+						<FaChevronRight />
+					</button>
+				</>
+			)}
+
+			<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-1 flex gap-2">
 				{titles.map((title, i) => (
 					<button
 						key={`dot-${title.media_type}-${title.id}`}
