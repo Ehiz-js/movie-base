@@ -1,14 +1,17 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { FaPlay } from "react-icons/fa";
+import { FaPlay, FaServer } from "react-icons/fa";
 import { MovieType, VideoType } from "@/types/movie";
 
-/**
- * The backdrop stands in for the player until it is clicked. YouTube's embed
- * pulls a lot of script, so loading it only on demand keeps it off the
- * critical path for the many visitors who never press play.
- */
+// 1. Define your backup servers
+const SERVERS = [
+	{ name: "VidLink (Fast)", id: "vidlink" },
+	{ name: "VidSrc 1", id: "vidsrc_me" },
+	{ name: "VidSrc 2", id: "vidsrc_to" },
+	{ name: "SuperEmbed", id: "super" },
+];
+
 export default function TrailerPlayer({
 	trailer,
 	backdropPath,
@@ -27,51 +30,109 @@ export default function TrailerPlayer({
 	episodeNumber?: number;
 }) {
 	const [playing, setPlaying] = useState(false);
+
+	// 2. State to track which server the user selected
+	const [activeServerIdx, setActiveServerIdx] = useState(0);
+
 	const id = movie.id;
 	const backdrop = backdropPath
 		? `https://image.tmdb.org/t/p/w1280${backdropPath}`
 		: null;
-	const customParams =
-		"primaryColor=5b21b6&secondaryColor=0a0a0a&icons=default&iconColor=ffffff&title=true&poster=true&autoplay=true&player=jw";
-	const embedUrl =
-		mediaType === "tv"
-			? `https://vidlink.pro/tv/${id}/${seasonNumber}/${episodeNumber}?nextbutton=true&${customParams}`
-			: `https://vidlink.pro/movie/${id}?${customParams}`;
+
+	// 3. A function to dynamically generate the URL based on the active server
+	const getEmbedUrl = () => {
+		const server = SERVERS[activeServerIdx].id;
+		const customParams =
+			"primaryColor=5b21b6&secondaryColor=0a0a0a&icons=default&iconColor=ffffff&title=true&poster=true&autoplay=true&player=jw";
+
+		if (mediaType === "tv") {
+			if (server === "vidlink")
+				return `https://vidlink.pro/tv/${id}/${seasonNumber}/${episodeNumber}?nextbutton=true&${customParams}`;
+			if (server === "vidsrc_me")
+				return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNumber}&episode=${episodeNumber}`;
+			if (server === "vidsrc_to")
+				return `https://vidsrc.to/embed/tv/${id}/${seasonNumber}/${episodeNumber}`;
+			if (server === "super")
+				return `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${seasonNumber}&e=${episodeNumber}`;
+		} else {
+			if (server === "vidlink")
+				return `https://vidlink.pro/movie/${id}?${customParams}`;
+			if (server === "vidsrc_me")
+				return `https://vidsrc.me/embed/movie?tmdb=${id}`;
+			if (server === "vidsrc_to") return `https://vidsrc.to/embed/movie/${id}`;
+			if (server === "super")
+				return `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`;
+		}
+	};
 
 	return (
-		<div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
-			{playing ? (
-				<iframe
-					src={embedUrl}
-					allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-					allowFullScreen
-					className="h-full w-full"
-				/>
-			) : (
-				<>
-					{backdrop ? (
-						<Image
-							src={backdrop}
-							alt=""
-							fill
-							className="object-cover opacity-70"
-						/>
-					) : (
-						<div className="h-full w-full bg-linear-to-br from-(--purple-dark)/40 to-black" />
-					)}
-					<div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+		<div className="flex flex-col gap-3">
+			{/* --- VIDEO PLAYER CONTAINER --- */}
+			<div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black ring-1 ring-white/10 shadow-2xl">
+				{playing ? (
+					<iframe
+						src={getEmbedUrl()}
+						title={`${title} video player`}
+						allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+						allowFullScreen
+						className="h-full w-full"
+					/>
+				) : (
+					<>
+						{backdrop ? (
+							<Image
+								src={backdrop}
+								alt=""
+								fill
+								className="object-cover opacity-70"
+							/>
+						) : (
+							<div className="h-full w-full bg-linear-to-br from-(--purple-dark)/40 to-black" />
+						)}
+						<div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
 
-					<button
-						type="button"
-						onClick={() => setPlaying(true)}
-						aria-label={`Play ${title}`}
-						className="group absolute inset-0 grid place-items-center cursor-pointer"
-					>
-						<span className="grid size-16 sm:size-20 place-items-center rounded-full bg-white/90 text-black shadow-2xl transition-transform duration-200 group-hover:scale-110 group-hover:bg-(--purple-dark) group-hover:text-white">
-							<FaPlay className="ml-1 size-6" />
-						</span>
-					</button>
-				</>
+						<button
+							type="button"
+							onClick={() => setPlaying(true)}
+							aria-label={`Play ${title}`}
+							className="group absolute inset-0 grid place-items-center cursor-pointer"
+						>
+							<span className="grid size-16 sm:size-20 place-items-center rounded-full bg-white/90 text-black shadow-2xl transition-transform duration-200 group-hover:scale-110 group-hover:bg-(--purple-dark) group-hover:text-white">
+								<FaPlay className="ml-1 size-6" />
+							</span>
+						</button>
+					</>
+				)}
+			</div>
+
+			{/* --- SERVER SWITCHER CONTROLS --- */}
+			{/* Only show this if the user has clicked play! */}
+			{playing && (
+				<div className="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-lg bg-white/5 ring-1 ring-white/10 w-full">
+					<div className="flex items-center gap-2 text-sm font-medium text-gray-400 shrink-0">
+						<FaServer className="text-(--purple-light)" />
+						<span>If video fails, change server:</span>
+					</div>
+
+					<div className="flex flex-wrap items-center gap-2 w-full">
+						{SERVERS.map((server, index) => {
+							const isActive = activeServerIdx === index;
+							return (
+								<button
+									key={server.id}
+									onClick={() => setActiveServerIdx(index)}
+									className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+										isActive
+											? "bg-(--purple-dark) text-white shadow-md"
+											: "bg-black/40 text-gray-400 hover:text-white hover:bg-black/60"
+									}`}
+								>
+									{server.name}
+								</button>
+							);
+						})}
+					</div>
+				</div>
 			)}
 		</div>
 	);
