@@ -10,7 +10,7 @@ export default function SearchResult({ movie }: { movie: MovieType }) {
 			href={`/title/${media_type}/${id}`}
 			className="flex items-center w-full p-2 hover:bg-purple-950 transition-colors duration-200"
 		>
-			<div className="flex items-center hover:bg-gray-950 transition-all duration-200">
+			<div className="flex items-center ">
 				<img
 					src={posterUrl}
 					alt={title}

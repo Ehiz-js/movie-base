@@ -48,7 +48,7 @@ export default function SearchResultList({
 						<li>
 							<Link
 								href={`/search?query=${encodeURIComponent(query)}`}
-								className="block p-3 text-center text-sm font-semibold text-(--purple-dark) hover:bg-gray-950 transition-all duration-200"
+								className="block p-3 text-center text-sm font-semibold text-(--purple-dark) hover:text-gray-300 transition-all duration-400"
 							>
 								See all {totalResults} results
 							</Link>
