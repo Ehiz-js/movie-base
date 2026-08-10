@@ -30,7 +30,12 @@ export default function MediaSection({
 }) {
 	// Track the active season and episode locally on the client
 	const [activeSeason, setActiveSeason] = useState(firstSeason ?? 1);
-	const [activeEpisode, setActiveEpisode] = useState(1);
+	// Seeded from the episode the browser actually highlights. A season does not
+	// always open on episode 1 — TMDB numbers some runs from a later episode —
+	// so hardcoding 1 would point the player somewhere the grid is not.
+	const [activeEpisode, setActiveEpisode] = useState(
+		firstSeasonEpisodes[0]?.episode_number ?? 1,
+	);
 
 	return (
 		<div className="lg:col-span-2 flex flex-col gap-6">
@@ -50,6 +55,10 @@ export default function MediaSection({
 					seasons={seasons}
 					initialSeason={firstSeason ?? 1}
 					initialEpisodes={firstSeasonEpisodes}
+					// Handed back down so the browser can mark what is playing while
+					// you look through other seasons.
+					playingSeason={activeSeason}
+					playingEpisode={activeEpisode}
 					// The browser fires this to update the player
 					onEpisodeChange={(season, episode) => {
 						setActiveSeason(season);
