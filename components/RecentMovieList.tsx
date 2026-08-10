@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { FaChevronDown } from "react-icons/fa";
+import {
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+	CarouselNext,
+	CarouselPrevious,
+} from "@/components/ui/carousel";
 import MovieCard from "./MovieCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -80,13 +87,23 @@ export default function RecentMovieList() {
 			</button>
 
 			{open && (
-				<ul className="w-full max-w-[78vw] sm:max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-[85rem] mx-auto grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-4">
-					{recent.map((title) => (
-						<li key={`${title.media_type}-${title.id}`}>
-							<MovieCard movie={title} />
-						</li>
-					))}
-				</ul>
+				<Carousel
+					opts={{ align: "start", slidesToScroll: "auto" }}
+					className="w-full max-w-[88vw] sm:max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-[85rem] mx-auto"
+				>
+					<CarouselContent className="-ml-2 md:-ml-4 items-stretch">
+						{recent.map((title) => (
+							<CarouselItem
+								key={`${title.media_type}-${title.id}`}
+								className="pl-2 md:pl-4 basis-1/3 sm:basis-1/4 md:basis-1/4 lg:basis-1/6"
+							>
+								<MovieCard movie={title} />
+							</CarouselItem>
+						))}
+					</CarouselContent>
+					<CarouselPrevious className="-left-3 md:-left-12 cursor-pointer text-(--purple-dark)" />
+					<CarouselNext className="-right-3 md:-right-12 cursor-pointer text-(--purple-dark)" />
+				</Carousel>
 			)}
 		</section>
 	);

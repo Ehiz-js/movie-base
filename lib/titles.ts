@@ -8,6 +8,7 @@ import {
 	WatchProviders,
 } from "@/types/movie";
 import { findGenre, genreNamesForTmdbId } from "@/lib/genres";
+import { searchAnime } from "@/lib/anilist";
 
 /**
  * TMDB's series payloads use different field names for the same ideas:
@@ -64,6 +65,19 @@ export function interleave<T>(a: T[], b: T[]): T[] {
 	return out;
 }
 
+/**
+ * True for TMDB entries that are actually anime (Animation genre + Japanese
+ * origin) rather than genuinely Western/other animation. Anime has its own
+ * AniList-backed pipeline end to end (lib/anilist.ts) — every TMDB list
+ * filters these out so a title never has two different detail pages
+ * depending on where you clicked it from.
+ */
+function isAnimeByGenre(title: MovieType): boolean {
+	if (title.original_language !== "ja") return false;
+	const ids = title.genres?.map((genre) => genre.id) ?? title.genre_ids ?? [];
+	return ids.includes(16);
+}
+
 async function fetchSide(
 	path: string,
 	mediaType: MediaType,
@@ -71,7 +85,9 @@ async function fetchSide(
 ): Promise<MovieType[]> {
 	try {
 		const data = await tmdbFetch<{ results: RawTitle[] }>(path, params);
-		return (data.results ?? []).map((item) => normalizeTitle(item, mediaType));
+		return (data.results ?? [])
+			.map((item) => normalizeTitle(item, mediaType))
+			.filter((title) => !isAnimeByGenre(title));
 	} catch (error) {
 		// One side failing should degrade the blend, not empty the page.
 		console.error(`${path} failed`, error);
@@ -118,20 +134,35 @@ export async function fetchBlendedTitles({
 	return interleave(movies, shows);
 }
 
-/** Search across both, using TMDB's multi endpoint. */
+/**
+ * Search across movies, series, and anime. TMDB's multi-search covers the
+ * first two; anime is searched separately against AniList and blended in, so
+ * a result for e.g. "one piece" always opens the AniList-backed page rather
+ * than whichever TMDB tv record happens to match the same title.
+ */
 export async function searchTitles(query: string): Promise<MovieType[]> {
-	try {
-		const data = await tmdbFetch<{ results: RawTitle[] }>("/search/multi", {
-			query,
-		});
-		return (data.results ?? [])
-			// multi also returns people, which have no poster or title to show.
-			.filter((item) => item.media_type === "movie" || item.media_type === "tv")
-			.map((item) => normalizeTitle(item, item.media_type as MediaType));
-	} catch (error) {
-		console.error("search failed", error);
-		throw error;
-	}
+	const [tmdbResults, anime] = await Promise.all([
+		(async () => {
+			try {
+				const data = await tmdbFetch<{ results: RawTitle[] }>("/search/multi", {
+					query,
+				});
+				return (data.results ?? [])
+					// multi also returns people, which have no poster or title to show.
+					.filter(
+						(item) => item.media_type === "movie" || item.media_type === "tv",
+					)
+					.map((item) => normalizeTitle(item, item.media_type as MediaType))
+					.filter((title) => !isAnimeByGenre(title));
+			} catch (error) {
+				console.error("search failed", error);
+				throw error;
+			}
+		})(),
+		searchAnime(query),
+	]);
+
+	return interleave(tmdbResults, anime);
 }
 
 /** A single film or series by id. */
@@ -167,9 +198,12 @@ export async function fetchSuggested(title: MovieType): Promise<MovieType[]> {
 		MAX_SUGGESTION_GENRES,
 	);
 	if (ownIds.length === 0) return [];
+	// Anime is sourced from AniList entirely and never flows through here —
+	// this only ever sees TMDB movie/tv titles in practice.
+	if (title.media_type !== "movie" && title.media_type !== "tv") return [];
 
 	const sameType = title.media_type;
-	const otherType: MediaType = sameType === "movie" ? "tv" : "movie";
+	const otherType: "movie" | "tv" = sameType === "movie" ? "tv" : "movie";
 
 	// The other side rarely uses the same ids, so each genre is translated
 	// through the equivalence map — one id per genre, since ANDing a genre's
@@ -212,6 +246,19 @@ export async function fetchPopular(
 	mediaType: MediaType,
 	page = "1",
 ): Promise<MovieType[]> {
+	if (mediaType === "tv") {
+		// TMDB's own /tv/popular ranks by raw view momentum, which regularly
+		// puts old, low-rated reality shows (re-airing, or spiking for
+		// unrelated reasons) ahead of what people actually mean by "popular".
+		// Discover with the same sort plus quality floors keeps the intent
+		// without the noise.
+		return fetchSide("/discover/tv", "tv", {
+			page,
+			sort_by: "popularity.desc",
+			"vote_count.gte": 200,
+			"vote_average.gte": 6,
+		});
+	}
 	return fetchSide(`/${mediaType}/popular`, mediaType, { page });
 }
 

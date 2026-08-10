@@ -20,13 +20,27 @@ export default function MovieCard({
 	onDelete?: (idSupabase: string) => void;
 }) {
 	const { user } = useAuth();
+	// Anime posters already arrive as full AniList CDN URLs; everything else is a
+	// bare TMDB path that still needs its base prefixed on.
 	const imageUrl = movie.poster_path
-		? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+		? movie.poster_path.startsWith("http")
+			? movie.poster_path
+			: `https://image.tmdb.org/t/p/w500${movie.poster_path}`
 		: null;
 	const year = movie.release_date?.slice(0, 4);
 	const rating = Number.isFinite(movie.vote_average)
 		? movie.vote_average.toFixed(1)
 		: null;
+	const href =
+		movie.media_type === "anime"
+			? `/anime/${movie.id}`
+			: `/title/${movie.media_type}/${movie.id}`;
+	const badge =
+		movie.media_type === "anime"
+			? "Anime"
+			: movie.media_type === "tv"
+				? "TV"
+				: "Movie";
 
 	async function recordRecentView() {
 		if (!user) return;
@@ -50,7 +64,7 @@ export default function MovieCard({
 	return (
 		<div className="group relative h-full">
 			<Link
-				href={`/title/${movie.media_type}/${movie.id}`}
+				href={href}
 				onClick={recordRecentView}
 				className="flex h-full flex-col overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10 hover:ring-(--purple-light) hover:-translate-y-1 transition-all duration-200"
 			>
@@ -74,7 +88,7 @@ export default function MovieCard({
 					)}
 
 					<span className="absolute top-2 left-2 rounded-md bg-(--purple-dark) px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-						{movie.media_type === "tv" ? "TV" : "Movie"}
+						{badge}
 					</span>
 
 					{rating && (

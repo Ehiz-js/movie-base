@@ -5,10 +5,16 @@ import { FaStar } from "react-icons/fa";
 
 export default function SearchResult({ movie }: { movie: MovieType }) {
 	const { title, poster_path, id, vote_average, media_type } = movie;
-	const posterUrl = `https://image.tmdb.org/t/p/w185${poster_path}`;
+	// Anime posters already arrive as full AniList CDN URLs; everything else is a
+	// bare TMDB path that still needs its base prefixed on.
+	const posterUrl = poster_path.startsWith("http")
+		? poster_path
+		: `https://image.tmdb.org/t/p/w185${poster_path}`;
+	const href =
+		media_type === "anime" ? `/anime/${id}` : `/title/${media_type}/${id}`;
 	return (
 		<Link
-			href={`/title/${media_type}/${id}`}
+			href={href}
 			className="flex items-center w-full p-2 hover:bg-purple-950 transition-colors duration-200"
 		>
 			<div className="flex items-center ">

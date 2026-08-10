@@ -43,7 +43,7 @@ export default function TitleRow({
 
 			<Carousel
 				opts={{ align: "start", slidesToScroll: "auto" }}
-				className="w-full max-w-[78vw] sm:max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-[85rem] mx-auto"
+				className="w-full max-w-[88vw] sm:max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-[85rem] mx-auto"
 			>
 				<CarouselContent className="-ml-2 md:-ml-4 items-stretch">
 					{titles.map((title) => (
@@ -55,8 +55,8 @@ export default function TitleRow({
 						</CarouselItem>
 					))}
 				</CarouselContent>
-				<CarouselPrevious className="-left-6 md:-left-12 cursor-pointer text-(--purple-dark)" />
-				<CarouselNext className="-right-6 md:-right-12 cursor-pointer text-(--purple-dark)" />
+				<CarouselPrevious className="-left-3 md:-left-12 cursor-pointer text-(--purple-dark)" />
+				<CarouselNext className="-right-3 md:-right-12 cursor-pointer text-(--purple-dark)" />
 			</Carousel>
 		</section>
 	);

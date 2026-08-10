@@ -6,11 +6,11 @@ import CommentSection from "@/components/CommentSection";
 import { SuggestedMovies } from "@/components/SuggestedMovies";
 import WatchListButton from "@/components/WatchListButton";
 import { fetchSeason, fetchSuggested, fetchTitleDetail } from "@/lib/titles";
-import WatchProvidersRow from "@/components/WatchProvidersRow";
-import { MediaType } from "@/types/movie";
 import MediaSection from "@/components/MediaSection";
 
-function parseMediaType(value: string): MediaType | null {
+// Anime has its own route (app/anime/[id]) sourced entirely from AniList, so this
+// route only ever deals with the two TMDB-backed media types.
+function parseMediaType(value: string): "movie" | "tv" | null {
 	return value === "movie" || value === "tv" ? value : null;
 }
 
@@ -64,7 +64,7 @@ export default async function TitlePage({
 	const detail = await fetchTitleDetail(mediaType, id);
 	if (!detail) notFound();
 
-	const { title: movie, trailer, providers } = detail;
+	const { title: movie, trailer } = detail;
 	const seasons = movie.seasons ?? [];
 	const firstSeason = seasons[0]?.season_number;
 
@@ -94,7 +94,7 @@ export default async function TitlePage({
 
 	return (
 		<>
-			<section className="relative overflow-hidden">
+			<section className="relative overflow-hidden mt-0 lg:mt-20">
 				<div className="absolute inset-0 h-[70vh] overflow-hidden">
 					<Image
 						src={backdropUrl}
@@ -171,8 +171,7 @@ export default async function TitlePage({
 				</div>
 			</section>
 
-			<section className="relative z-1 max-w-6xl mx-auto px-4 sm:px-6 mt-10 grid gap-6 lg:grid-cols-3">
-				{/* 2. Replace the two components with the wrapper */}
+			<section className="relative z-1 max-w-6xl mx-auto px-4 sm:px-6 mt-10">
 				<MediaSection
 					movie={movie}
 					trailer={trailer}
@@ -183,10 +182,6 @@ export default async function TitlePage({
 					firstSeasonEpisodes={firstSeasonEpisodes}
 					mediaType={mediaType}
 				/>
-
-				<div className="lg:col-span-1">
-					<WatchProvidersRow providers={providers} />
-				</div>
 			</section>
 
 			{suggestedMovieList.length > 0 && (

@@ -8,7 +8,8 @@ export interface GenreType {
  * Supabase (watchlist, recent_movies) only carry these columns, so anything
  * that renders a card should accept this rather than the full TMDB shape.
  */
-export type MediaType = "movie" | "tv";
+/** "anime" ids come from MyAnimeList, not TMDB — a separate id space entirely. */
+export type MediaType = "movie" | "tv" | "anime";
 
 export interface MovieSummary {
 	id: number;
@@ -20,6 +21,8 @@ export interface MovieSummary {
 	title: string;
 	poster_path: string;
 	vote_average: number;
+	/** Only ever set on anime — AniList has no separate TMDB-style backdrop image. */
+	release_date?: string;
 }
 
 /**

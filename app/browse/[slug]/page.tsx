@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import MovieCard from "@/components/MovieCard";
 import { findGenreBySlug } from "@/lib/genres";
 import { fetchGenreTitles, fetchPopular } from "@/lib/titles";
+import { fetchPopularAnime } from "@/lib/anilist";
 import { MovieType } from "@/types/movie";
 
 const MAX_PAGES = 10;
@@ -20,6 +21,12 @@ function resolveSlug(slug: string) {
 		return {
 			heading: "Popular Series",
 			load: (page: string) => fetchPopular("tv", page),
+		};
+	}
+	if (slug === "popular-anime") {
+		return {
+			heading: "Popular Anime",
+			load: (page: string) => fetchPopularAnime(page),
 		};
 	}
 	const genre = findGenreBySlug(slug);
@@ -110,5 +117,9 @@ export default async function BrowsePage({
 
 /** Pre-render the fixed rows; genre pages are generated on demand. */
 export function generateStaticParams() {
-	return [{ slug: "popular-movies" }, { slug: "popular-series" }];
+	return [
+		{ slug: "popular-movies" },
+		{ slug: "popular-series" },
+		{ slug: "popular-anime" },
+	];
 }

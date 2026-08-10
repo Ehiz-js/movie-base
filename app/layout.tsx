@@ -36,10 +36,10 @@ export default function RootLayout({
 			>
 				<AuthProvider>
 					<Navbar />
-					{/* The navbar is fixed, and stacks to three rows on small screens.
-					    Pages offset themselves for its desktop height, so this adds the
-					    extra clearance the taller mobile layout needs. */}
-					<main className="pt-20 lg:pt-0">{children}</main>
+					{/* The navbar is fixed and a bit taller than its desktop row on
+					    small screens (logo + hamburger toggle), so this adds the
+					    extra clearance mobile needs. */}
+					<main className="pt-16 lg:pt-0">{children}</main>
 					<Footer />
 				</AuthProvider>
 			</body>

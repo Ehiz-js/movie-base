@@ -105,14 +105,18 @@ declare
 begin
   foreach t in array array['watchlist', 'recent_movies', 'comments'] loop
     execute format($f$update public.%I set media_type = 'movie' where media_type is null$f$, t);
-    if not exists (
+    -- Dropped and re-added rather than guarded by existence: an older run of
+    -- this file may have already created the narrower ('movie', 'tv')
+    -- version, and this needs to widen it to admit anime too.
+    if exists (
       select 1 from pg_constraint
       where conrelid = format('public.%I', t)::regclass and conname = t || '_media_type_check'
     ) then
-      execute format(
-        'alter table public.%I add constraint %I check (media_type in (''movie'', ''tv''))',
-        t, t || '_media_type_check');
+      execute format('alter table public.%I drop constraint %I', t, t || '_media_type_check');
     end if;
+    execute format(
+      'alter table public.%I add constraint %I check (media_type in (''movie'', ''tv'', ''anime''))',
+      t, t || '_media_type_check');
   end loop;
 end $$;
 

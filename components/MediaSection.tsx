@@ -38,7 +38,7 @@ export default function MediaSection({
 	);
 
 	return (
-		<div className="lg:col-span-2 flex flex-col gap-6">
+		<div className="flex flex-col gap-6">
 			<TrailerPlayer
 				trailer={trailer}
 				backdropPath={backdropPath}
