@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import TrailerPlayer from "./TrailerPlayer";
 import SeasonBrowser from "./SeasonBrowser";
 import {
@@ -37,14 +37,6 @@ export default function MediaSection({
 		firstSeasonEpisodes[0]?.episode_number ?? 1,
 	);
 
-	// The browser reports from an effect, so this has to keep the same identity
-	// between renders — a fresh function each time would re-run that effect and
-	// refetch the season in a loop. Setters are stable, so there are no deps.
-	const handleEpisodeChange = useCallback((season: number, episode: number) => {
-		setActiveSeason(season);
-		setActiveEpisode(episode);
-	}, []);
-
 	return (
 		<div className="lg:col-span-2 flex flex-col gap-6">
 			<TrailerPlayer
@@ -64,7 +56,10 @@ export default function MediaSection({
 					initialSeason={firstSeason ?? 1}
 					initialEpisodes={firstSeasonEpisodes}
 					// The browser fires this to update the player
-					onEpisodeChange={handleEpisodeChange}
+					onEpisodeChange={(season, episode) => {
+						setActiveSeason(season);
+						setActiveEpisode(episode);
+					}}
 				/>
 			)}
 		</div>
