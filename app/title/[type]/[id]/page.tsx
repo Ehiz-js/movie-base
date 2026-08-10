@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { FaStar } from "react-icons/fa";
 import CommentSection from "@/components/CommentSection";
@@ -86,7 +87,7 @@ export default async function TitlePage({
 		vote_average,
 	} = movie;
 	const posterUrl = `https://image.tmdb.org/t/p/w500${poster_path}`;
-	const backdropUrl = `https://image.tmdb.org/t/p/original${backdrop_path}`;
+	const backdropUrl = `https://image.tmdb.org/t/p/w1280${backdrop_path}`;
 	const releaseYear = release_date ? release_date.slice(0, 4) : "N/A";
 	const rating = Number.isFinite(vote_average)
 		? vote_average.toFixed(1)
@@ -96,10 +97,12 @@ export default async function TitlePage({
 		<>
 			<section className="relative">
 				<div className="absolute inset-0 h-[70vh]">
-					<img
+					<Image
 						src={backdropUrl}
 						alt=""
-						className="w-full h-full object-cover"
+						fill
+						priority
+						className="object-cover"
 					/>
 					<div className="absolute inset-0 bg-linear-to-t from-(--background) via-(--background)/80 to-black/50" />
 				</div>
@@ -107,11 +110,18 @@ export default async function TitlePage({
 				<div className="relative z-1 max-w-6xl mx-auto px-4 sm:px-6 pt-32 sm:pt-40">
 					<div className="flex flex-col md:flex-row gap-6 md:gap-8">
 						{poster_path ? (
-							<img
-								src={posterUrl}
-								alt={title}
-								className="w-40 sm:w-52 md:w-64 shrink-0 rounded-xl shadow-2xl ring-1 ring-white/10"
-							/>
+							<div className="relative w-40 sm:w-52 md:w-64 aspect-2/3 shrink-0 overflow-hidden rounded-xl shadow-2xl ring-1 ring-white/10">
+								<Image
+									src={posterUrl}
+									alt={title}
+									fill
+									sizes="(max-width: 640px) 160px, (max-width: 768px) 208px, 256px"
+									// The poster is the largest thing above the fold here, so
+									// it is the LCP element and should not lazy-load.
+									priority
+									className="object-cover"
+								/>
+							</div>
 						) : null}
 
 						<div className="flex flex-col gap-4 min-w-0">

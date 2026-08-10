@@ -2,6 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { MovieSummary } from "@/types/movie";
+import Image from "next/image";
 import Link from "next/link";
 import { FaStar, FaTimes } from "react-icons/fa";
 
@@ -47,21 +48,24 @@ export default function MovieCard({
 	}
 
 	return (
-		<div className="group relative">
+		<div className="group relative h-full">
 			<Link
 				href={`/title/${movie.media_type}/${movie.id}`}
 				onClick={recordRecentView}
-				className="block overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10 hover:ring-(--purple-light) hover:-translate-y-1 transition-all duration-200"
+				className="flex h-full flex-col overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10 hover:ring-(--purple-light) hover:-translate-y-1 transition-all duration-200"
 			>
 				{/* Fixed ratio keeps every card the same height whatever TMDB returns,
 				    including titles with no poster at all. */}
-				<div className="relative aspect-2/3 w-full overflow-hidden bg-black/40">
+				<div className="relative aspect-2/3 w-full shrink-0 overflow-hidden bg-black/40">
 					{imageUrl ? (
-						<img
+						<Image
 							src={imageUrl}
 							alt={movie.title}
-							loading="lazy"
-							className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+							fill
+							// Two per row on phones, four on tablets, six on desktop —
+							// without this every card would download a full-width image.
+							sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+							className="object-cover transition-transform duration-300 group-hover:scale-105"
 						/>
 					) : (
 						<div className="grid h-full w-full place-items-center p-3 text-center text-xs text-gray-400">
@@ -88,7 +92,9 @@ export default function MovieCard({
 					<h3 className="truncate text-xs font-semibold" title={movie.title}>
 						{movie.title}
 					</h3>
-					{year && <p className="mt-0.5 text-xs text-gray-400">{year}</p>}
+					{/* Rendered even when the year is unknown, so a missing date cannot
+					    make one card shorter than its neighbours. */}
+					<p className="mt-0.5 text-xs text-gray-400">{year ?? "\u00A0"}</p>
 				</div>
 			</Link>
 

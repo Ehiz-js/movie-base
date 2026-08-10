@@ -45,7 +45,7 @@ export default function TitleRow({
 				opts={{ align: "start", slidesToScroll: "auto" }}
 				className="w-full max-w-[78vw] sm:max-w-xl md:max-w-3xl lg:max-w-6xl xl:max-w-[85rem] mx-auto"
 			>
-				<CarouselContent className="-ml-2 md:-ml-4">
+				<CarouselContent className="-ml-2 md:-ml-4 items-stretch">
 					{titles.map((title) => (
 						<CarouselItem
 							key={`${title.media_type}-${title.id}`}
