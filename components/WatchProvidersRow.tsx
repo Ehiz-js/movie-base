@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { WatchProviders } from "@/types/movie";
 
 /**
@@ -35,10 +36,12 @@ export default function WatchProvidersRow({
 						<ul className="flex flex-wrap gap-2">
 							{group.items?.map((provider) => (
 								<li key={provider.provider_id}>
-									<img
+									<Image
 										src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
 										alt={provider.provider_name}
 										title={provider.provider_name}
+										width={36}
+										height={36}
 										className="size-9 rounded-lg ring-1 ring-white/10"
 									/>
 								</li>

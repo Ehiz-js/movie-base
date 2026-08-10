@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState } from "react";
 import { FaPlay } from "react-icons/fa";
 import { VideoType } from "@/types/movie";
@@ -36,10 +37,11 @@ export default function TrailerPlayer({
 			) : (
 				<>
 					{backdrop ? (
-						<img
+						<Image
 							src={backdrop}
 							alt=""
-							className="h-full w-full object-cover opacity-70"
+							fill
+							className="object-cover opacity-70"
 						/>
 					) : (
 						<div className="h-full w-full bg-linear-to-br from-(--purple-dark)/40 to-black" />
