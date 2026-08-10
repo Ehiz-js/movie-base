@@ -55,6 +55,10 @@ export default function MediaSection({
 					seasons={seasons}
 					initialSeason={firstSeason ?? 1}
 					initialEpisodes={firstSeasonEpisodes}
+					// Handed back down so the browser can mark what is playing while
+					// you look through other seasons.
+					playingSeason={activeSeason}
+					playingEpisode={activeEpisode}
 					// The browser fires this to update the player
 					onEpisodeChange={(season, episode) => {
 						setActiveSeason(season);
