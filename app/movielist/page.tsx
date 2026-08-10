@@ -97,7 +97,7 @@ export default function MovieListPage() {
 						Please add a movie to your list.
 					</p>
 				) : (
-					<ul className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-350 px-4">
+					<ul className="grid w-full max-w-5xl grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 px-4">
 						{movies.map((movie) => (
 							<li key={movie.id_supabase}>
 								<MovieCard movie={movie} onDelete={deleteFromWatchList} />
