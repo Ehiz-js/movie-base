@@ -10,6 +10,7 @@ import SeasonBrowser from "@/components/SeasonBrowser";
 import TrailerPlayer from "@/components/TrailerPlayer";
 import WatchProvidersRow from "@/components/WatchProvidersRow";
 import { MediaType, MovieType } from "@/types/movie";
+import MediaSection from "@/components/MediaSection";
 
 function parseMediaType(value: string): MediaType | null {
 	return value === "movie" || value === "tv" ? value : null;
@@ -172,22 +173,17 @@ export default async function TitlePage({
 			</section>
 
 			<section className="relative z-1 max-w-6xl mx-auto px-4 sm:px-6 mt-10 grid gap-6 lg:grid-cols-3">
-				<div className="lg:col-span-2 flex flex-col gap-6">
-					<TrailerPlayer
-						trailer={trailer}
-						backdropPath={backdrop_path}
-						title={title}
-					/>
-
-					{mediaType === "tv" && seasons.length > 0 && (
-						<SeasonBrowser
-							tvId={movie.id}
-							seasons={seasons}
-							initialSeason={firstSeason ?? 1}
-							initialEpisodes={firstSeasonEpisodes}
-						/>
-					)}
-				</div>
+				{/* 2. Replace the two components with the wrapper */}
+				<MediaSection
+					movie={movie}
+					trailer={trailer}
+					backdropPath={backdrop_path}
+					title={title}
+					seasons={seasons}
+					firstSeason={firstSeason}
+					firstSeasonEpisodes={firstSeasonEpisodes}
+					mediaType={mediaType}
+				/>
 
 				<div className="lg:col-span-1">
 					<WatchProvidersRow providers={providers} />
