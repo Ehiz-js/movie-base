@@ -35,6 +35,12 @@ export default function SeasonBrowser({
 		if (seasonNumber === initialSeason) {
 			setEpisodes(initialEpisodes);
 			setSelectedId(initialEpisodes[0]?.id ?? null);
+			// Picking a season moves the selection to its opening episode, so the
+			// player has to hear about it too — otherwise it keeps playing the
+			// episode from the season the viewer just left.
+			if (initialEpisodes[0]) {
+				onEpisodeChange(seasonNumber, initialEpisodes[0].episode_number);
+			}
 			return;
 		}
 
@@ -48,6 +54,9 @@ export default function SeasonBrowser({
 				if (cancelled) return;
 				setEpisodes(data);
 				setSelectedId(data[0]?.id ?? null);
+				// The episode number is only known once the season has loaded, which
+				// is why this reports here rather than from the season button.
+				if (data[0]) onEpisodeChange(seasonNumber, data[0].episode_number);
 			} catch (error) {
 				console.error(error);
 				if (!cancelled) {
@@ -63,7 +72,7 @@ export default function SeasonBrowser({
 		return () => {
 			cancelled = true;
 		};
-	}, [tvId, seasonNumber, initialSeason, initialEpisodes]);
+	}, [tvId, seasonNumber, initialSeason, initialEpisodes, onEpisodeChange]);
 
 	const selected =
 		episodes.find((episode) => episode.id === selectedId) ?? episodes[0];
