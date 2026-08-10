@@ -1,10 +1,18 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { FaPlay } from "react-icons/fa";
+import { FaPlay, FaServer } from "react-icons/fa";
 import { MovieType, VideoType } from "@/types/movie";
 
 type Source = "watch" | "trailer";
+
+// 1. Define your backup servers
+const SERVERS = [
+	{ name: "VidLink (Fast)", id: "vidlink" },
+	{ name: "VidSrc 1", id: "vidsrc_me" },
+	{ name: "VidSrc 2", id: "vidsrc_to" },
+	{ name: "SuperEmbed", id: "super" },
+];
 
 /**
  * The backdrop stands in for the player until it is clicked. Embeds pull a lot
@@ -35,16 +43,39 @@ export default function TrailerPlayer({
 	const [playing, setPlaying] = useState(false);
 	const [source, setSource] = useState<Source>("watch");
 
+	// 2. State to track which server the user selected
+	const [activeServerIdx, setActiveServerIdx] = useState(0);
+
 	const id = movie.id;
 	const backdrop = backdropPath
 		? `https://image.tmdb.org/t/p/w1280${backdropPath}`
 		: null;
-	const customParams =
-		"primaryColor=5b21b6&secondaryColor=0a0a0a&icons=default&iconColor=ffffff&title=true&poster=true&autoplay=true&player=jw";
-	const embedUrl =
-		mediaType === "tv"
-			? `https://vidlink.pro/tv/${id}/${seasonNumber}/${episodeNumber}?nextbutton=true&${customParams}`
-			: `https://vidlink.pro/movie/${id}?${customParams}`;
+
+	// 3. A function to dynamically generate the URL based on the active server
+	const getEmbedUrl = () => {
+		const server = SERVERS[activeServerIdx].id;
+		const customParams =
+			"primaryColor=5b21b6&secondaryColor=0a0a0a&icons=default&iconColor=ffffff&title=true&poster=true&autoplay=true&player=jw";
+
+		if (mediaType === "tv") {
+			if (server === "vidlink")
+				return `https://vidlink.pro/tv/${id}/${seasonNumber}/${episodeNumber}?nextbutton=true&${customParams}`;
+			if (server === "vidsrc_me")
+				return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNumber}&episode=${episodeNumber}`;
+			if (server === "vidsrc_to")
+				return `https://vidsrc.to/embed/tv/${id}/${seasonNumber}/${episodeNumber}`;
+			if (server === "super")
+				return `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${seasonNumber}&e=${episodeNumber}`;
+		} else {
+			if (server === "vidlink")
+				return `https://vidlink.pro/movie/${id}?${customParams}`;
+			if (server === "vidsrc_me")
+				return `https://vidsrc.me/embed/movie?tmdb=${id}`;
+			if (server === "vidsrc_to") return `https://vidsrc.to/embed/movie/${id}`;
+			if (server === "super")
+				return `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`;
+		}
+	};
 
 	// Falling back to the other source keeps the frame from going blank if a
 	// title has no trailer at all.
@@ -52,7 +83,8 @@ export default function TrailerPlayer({
 
 	return (
 		<div className="flex flex-col gap-3">
-			<div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
+			{/* --- VIDEO PLAYER CONTAINER --- */}
+			<div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black ring-1 ring-white/10 shadow-2xl">
 				{playing ? (
 					active === "trailer" && trailer ? (
 						<iframe
@@ -67,9 +99,12 @@ export default function TrailerPlayer({
 						/>
 					) : (
 						<iframe
-							key={`watch-${seasonNumber}-${episodeNumber}`}
-							src={embedUrl}
-							title={title}
+							// The server is part of the key too, so picking a different
+							// one starts it fresh rather than reusing a frame that has
+							// already failed.
+							key={`watch-${activeServerIdx}-${seasonNumber}-${episodeNumber}`}
+							src={getEmbedUrl()}
+							title={`${title} video player`}
 							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
 							allowFullScreen
 							className="h-full w-full"
@@ -141,6 +176,37 @@ export default function TrailerPlayer({
 							{label}
 						</button>
 					))}
+				</div>
+			)}
+
+			{/* --- SERVER SWITCHER CONTROLS --- */}
+			{/* Only show this if the user has clicked play! */}
+			{/* Hidden while the trailer is up, since it has nothing to do with it. */}
+			{playing && active === "watch" && (
+				<div className="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-lg bg-white/5 ring-1 ring-white/10 w-full">
+					<div className="flex items-center gap-2 text-sm font-medium text-gray-400 shrink-0">
+						<FaServer className="text-(--purple-light)" />
+						<span>If video fails, change server:</span>
+					</div>
+
+					<div className="flex flex-wrap items-center gap-2 w-full">
+						{SERVERS.map((server, index) => {
+							const isActive = activeServerIdx === index;
+							return (
+								<button
+									key={server.id}
+									onClick={() => setActiveServerIdx(index)}
+									className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+										isActive
+											? "bg-(--purple-dark) text-white shadow-md"
+											: "bg-black/40 text-gray-400 hover:text-white hover:bg-black/60"
+									}`}
+								>
+									{server.name}
+								</button>
+							);
+						})}
+					</div>
 				</div>
 			)}
 		</div>
