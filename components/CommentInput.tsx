@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useState } from "react";
 import CommentInputButton from "./CommentInputButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { MediaType } from "@/types/movie";
 
 export function CommentInput({
 	movieId,
+	mediaType,
 	onSubmitted,
 }: {
 	movieId: number;
+	mediaType: MediaType;
 	onSubmitted: () => void;
 }) {
 	const [comment, setComment] = useState("");
@@ -54,6 +57,7 @@ export function CommentInput({
 					<div>
 						<CommentInputButton
 							movieId={movieId}
+							mediaType={mediaType}
 							comment={comment}
 							onSubmitted={() => {
 								setComment("");

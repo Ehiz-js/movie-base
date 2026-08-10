@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
-import { tmdbFetch } from "@/lib/tmdbServer";
-import { GenreType } from "@/types/movie";
+import { VISIBLE_GENRES } from "@/lib/genres";
 
+/**
+ * Genres are served from the local equivalence map rather than TMDB: the two
+ * TMDB lists disagree, and each visible genre maps onto ids for both sides.
+ */
 export async function GET() {
-	try {
-		const data = await tmdbFetch<{ genres: GenreType[] }>("/genre/movie/list", {
-			language: "en-US",
-		});
-		return NextResponse.json(data.genres);
-	} catch (error) {
-		console.error(error);
-		return NextResponse.json(
-			{ error: "Failed to GET genre list" },
-			{ status: 500 },
-		);
-	}
+	return NextResponse.json(VISIBLE_GENRES);
 }

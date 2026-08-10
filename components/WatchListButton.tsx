@@ -19,6 +19,7 @@ export default function WatchListButton({ movie }: { movie: MovieType }) {
 
 	const userId = user?.id;
 	const movieId = movie.id;
+	const mediaType = movie.media_type;
 
 	useEffect(() => {
 		if (!userId) {
@@ -35,6 +36,7 @@ export default function WatchListButton({ movie }: { movie: MovieType }) {
 				.select("id_supabase")
 				.eq("user_id", userId)
 				.eq("movie_id", movieId)
+				.eq("media_type", mediaType)
 				.maybeSingle();
 
 			if (cancelled) return;
@@ -47,7 +49,7 @@ export default function WatchListButton({ movie }: { movie: MovieType }) {
 		return () => {
 			cancelled = true;
 		};
-	}, [userId, movieId]);
+	}, [userId, movieId, mediaType]);
 
 	/**
 	 * Saves the movie, then sends the confirmation email. The save is what the
@@ -71,6 +73,7 @@ export default function WatchListButton({ movie }: { movie: MovieType }) {
 					{
 						user_id: user?.id,
 						movie_id: movie.id,
+						media_type: movie.media_type,
 						title: movie.title,
 						poster_path: movie.poster_path,
 						vote_average: movie.vote_average,

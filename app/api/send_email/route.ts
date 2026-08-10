@@ -33,6 +33,7 @@ export async function POST(req: Request) {
 
 		await sendWatchlistEmail(user.email, {
 			id: Number(movie.id),
+			media_type: movie.media_type === "tv" ? "tv" : "movie",
 			title: String(movie.title ?? ""),
 			poster_path: String(movie.poster_path ?? ""),
 			vote_average: Number(movie.vote_average),

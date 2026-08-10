@@ -88,6 +88,35 @@ create table if not exists public.profiles (
 --   drop column if exists selected_language;
 
 -- ---------------------------------------------------------------------------
+-- 1b. Media type
+--
+-- A film and a series can share the same numeric id — 550 is both — so a saved
+-- title is only identified by the pair. Rows written before series support
+-- were all films, which is what the default backfills them as.
+-- ---------------------------------------------------------------------------
+
+alter table public.watchlist     add column if not exists media_type text not null default 'movie';
+alter table public.recent_movies add column if not exists media_type text not null default 'movie';
+alter table public.comments      add column if not exists media_type text not null default 'movie';
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['watchlist', 'recent_movies', 'comments'] loop
+    execute format($f$update public.%I set media_type = 'movie' where media_type is null$f$, t);
+    if not exists (
+      select 1 from pg_constraint
+      where conrelid = format('public.%I', t)::regclass and conname = t || '_media_type_check'
+    ) then
+      execute format(
+        'alter table public.%I add constraint %I check (media_type in (''movie'', ''tv''))',
+        t, t || '_media_type_check');
+    end if;
+  end loop;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- 2. Unique constraints
 --
 -- recent_movies REQUIRES this: MovieCard upserts with
@@ -106,19 +135,27 @@ begin
     execute format($f$
       delete from public.%I a using public.%I b
       where a.id_supabase < b.id_supabase
-        and a.user_id = b.user_id and a.movie_id = b.movie_id
+        and a.user_id = b.user_id
+        and a.movie_id = b.movie_id
+        and a.media_type = b.media_type
     $f$, t, t);
+
+    -- The old key was (user_id, movie_id), which cannot tell film 550 from
+    -- series 550. Replace it with one that includes the media type.
+    if exists (
+      select 1 from pg_constraint
+      where conrelid = format('public.%I', t)::regclass and conname = t || '_user_movie_key'
+    ) then
+      execute format('alter table public.%I drop constraint %I', t, t || '_user_movie_key');
+    end if;
 
     if not exists (
       select 1 from pg_constraint
-      where conrelid = format('public.%I', t)::regclass
-        and contype = 'u'
-        and conkey @> array[
-          (select attnum from pg_attribute where attrelid = format('public.%I', t)::regclass and attname = 'user_id'),
-          (select attnum from pg_attribute where attrelid = format('public.%I', t)::regclass and attname = 'movie_id')
-        ]
+      where conrelid = format('public.%I', t)::regclass and conname = t || '_user_media_movie_key'
     ) then
-      execute format('alter table public.%I add constraint %I unique (user_id, movie_id)', t, t || '_user_movie_key');
+      execute format(
+        'alter table public.%I add constraint %I unique (user_id, media_type, movie_id)',
+        t, t || '_user_media_movie_key');
     end if;
   end loop;
 end $$;

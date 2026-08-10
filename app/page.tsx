@@ -1,188 +1,52 @@
-"use client";
-import { useEffect, useMemo, useState } from "react";
-import MovieCard from "@/components/MovieCard";
-import GenreSelect, { ALL_GENRES } from "@/components/GenreSelect";
-import SortSelect from "@/components/SortSelect";
-import Pagination from "@/components/Pagination";
+import HeroCarousel from "@/components/HeroCarousel";
 import RecentMovieList from "@/components/RecentMovieList";
-import { Spinner } from "@/components/ui/spinner";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
-import { getSortedMovies } from "@/lib/tmdb";
-import {
-	GenreType,
-	MovieSummary,
-	MovieType,
-	RecentMovieRow,
-	toMovieSummary,
-} from "@/types/movie";
+import TitleRow from "@/components/TitleRow";
+import { HOME_GENRES, genreSlug } from "@/lib/genres";
+import { fetchGenreTitles, fetchPopular } from "@/lib/titles";
 
-const MAX_PAGES = 10;
-const MS_IN_A_DAY = 24 * 60 * 60 * 1000;
-
-export default function Home() {
-	const { user } = useAuth();
-	const userId = user?.id;
-
-	const [movies, setMovies] = useState<MovieType[]>([]);
-	const [genreList, setGenreList] = useState<GenreType[]>([]);
-	const [recentMovies, setRecentMovies] = useState<MovieSummary[]>([]);
-
-	const [genreId, setGenreId] = useState("");
-	const [sortValue, setSortValue] = useState("");
-	const [pageNum, setPageNum] = useState(1);
-
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState("");
-
-	useEffect(() => {
-		async function fetchGenres() {
-			try {
-				const res = await fetch("/api/movies/genre_list");
-				if (!res.ok) return;
-				setGenreList(await res.json());
-			} catch (err) {
-				console.error(err);
-			}
-		}
-		fetchGenres();
-	}, []);
-
-	// One fetch drives the grid. Which endpoint it hits depends on whether a
-	// genre is selected, so filtering and pagination stay in step instead of
-	// overwriting each other.
-	useEffect(() => {
-		let cancelled = false;
-
-		async function fetchMovies() {
-			setIsLoading(true);
-			setError("");
-			const url = genreId
-				? `/api/movies/filtered_movie_list?genreId=${genreId}&page=${pageNum}`
-				: `/api/movies/movie_page?page=${pageNum}`;
-			try {
-				const res = await fetch(url);
-				if (!res.ok) throw new Error(`Request failed (${res.status})`);
-				const data = await res.json();
-				if (!cancelled) setMovies(Array.isArray(data) ? data : []);
-			} catch (err) {
-				console.error(err);
-				if (!cancelled) {
-					setMovies([]);
-					setError("Could not load movies. Please try again.");
-				}
-			} finally {
-				if (!cancelled) setIsLoading(false);
-			}
-		}
-
-		fetchMovies();
-		return () => {
-			cancelled = true;
-		};
-	}, [genreId, pageNum]);
-
-	useEffect(() => {
-		if (!userId) {
-			setRecentMovies([]);
-			return;
-		}
-		async function fetchRecent() {
-			const { data, error } = await supabase
-				.from("recent_movies")
-				.select("*")
-				.eq("user_id", userId)
-				.order("viewed_at", { ascending: false })
-				.limit(4);
-
-			if (error) {
-				console.error(error);
-				return;
-			}
-			const now = Date.now();
-			const recent = ((data ?? []) as RecentMovieRow[])
-				.filter((row) => now - new Date(row.viewed_at).getTime() <= MS_IN_A_DAY)
-				.map(toMovieSummary);
-			setRecentMovies(recent);
-		}
-		fetchRecent();
-	}, [userId]);
-
-	// Sorting is derived rather than written back into `movies`, so switching
-	// sort order never destroys the order the API returned.
-	const visibleMovies = useMemo(
-		() => getSortedMovies(sortValue, movies),
-		[sortValue, movies],
-	);
-
-	function filterMovies(nextGenreId: string) {
-		setGenreId(nextGenreId === ALL_GENRES ? "" : nextGenreId);
-		setPageNum(1);
-	}
+// TMDB data is cached by tmdbFetch's revalidate, so the rows below cost one
+// upstream request each per minute rather than one per visitor.
+export default async function Home() {
+	// Every row is fetched in parallel; a row that fails comes back empty and
+	// renders nothing rather than taking the page down.
+	const [popularMovies, popularSeries, ...genreRows] = await Promise.all([
+		fetchPopular("movie"),
+		fetchPopular("tv"),
+		...HOME_GENRES.map((genre) => fetchGenreTitles(genre)),
+	]);
 
 	return (
 		<>
-			{recentMovies.length > 0 && (
-				<RecentMovieList recentMovies={recentMovies} />
-			)}
-			<section className={`mb-12 ${recentMovies.length > 0 ? "" : "mt-24"}`}>
-				<div className="flex w-full flex-col justify-center items-center">
-					<div className="flex flex-row items-center w-375px justify-between gap-1 sm:gap-3 p-2 sm:p-4 overflow-hidden">
-						{/* TITLE: Allowed to shrink and truncate if it gets too long */}
-						<h3 className="uppercase text-xs sm:text-sm md:text-base font-medium truncate min-w-0 pr-2">
-							{genreId
-								? genreList.find((g) => String(g.id) === genreId)?.name
-								: "Popular"}{" "}
-							movies
-						</h3>
+			{/* Films only, as the hero is about headline titles. The negative
+			    margin cancels the mobile clearance the layout adds for the fixed
+			    navbar, so the backdrop runs to the top of the page behind it. */}
+			<div className="mt-25">
+				<HeroCarousel titles={popularMovies.slice(0, 5)} />
+			</div>
 
-						{/* DROPDOWNS: Tighter gap, forced to stay in bounds */}
-						<div className="flex flex-row gap-1 sm:gap-2 flex-shrink-0">
-							{/* You might need to add className props to these components depending on how they are built inside */}
-							<div className="w-[100px] sm:w-auto">
-								<GenreSelect
-									handleClick={filterMovies}
-									genreList={genreList}
-									genreId={genreId}
-								/>
-							</div>
-							<div className="w-[90px] sm:w-auto">
-								<SortSelect handleClick={setSortValue} />
-							</div>
-						</div>
-					</div>
+			<div className="mt-10">
+				<RecentMovieList />
 
-					{isLoading ? (
-						<div className="flex items-center justify-center min-h-100">
-							<Spinner className="text-purple-600" />
-						</div>
-					) : error ? (
-						<p className="text-red-600 min-h-100 flex items-center">{error}</p>
-					) : visibleMovies.length === 0 ? (
-						<p className="text-(--purple-dark) min-h-100 flex items-center uppercase font-semibold">
-							No movies found.
-						</p>
-					) : (
-						<ul className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-350px px-4 mx-auto">
-							{visibleMovies.map((movie: MovieType) => (
-								<li key={movie.id}>
-									<MovieCard movie={movie} />
-								</li>
-							))}
-						</ul>
-					)}
+				<TitleRow
+					heading="Popular Series"
+					moreHref="/browse/popular-series"
+					titles={popularSeries}
+				/>
+				<TitleRow
+					heading="Popular Movies"
+					moreHref="/browse/popular-movies"
+					titles={popularMovies}
+				/>
 
-					<Pagination
-						pageNum={pageNum}
-						totalPages={MAX_PAGES}
-						hasNext={pageNum < MAX_PAGES}
-						incrementPageNum={() =>
-							setPageNum((prev) => Math.min(prev + 1, MAX_PAGES))
-						}
-						decrementPageNum={() => setPageNum((prev) => Math.max(prev - 1, 1))}
+				{HOME_GENRES.map((genre, index) => (
+					<TitleRow
+						key={genre}
+						heading={genre}
+						moreHref={`/browse/${genreSlug(genre)}`}
+						titles={genreRows[index] ?? []}
 					/>
-				</div>
-			</section>
+				))}
+			</div>
 		</>
 	);
 }
