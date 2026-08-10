@@ -49,7 +49,7 @@ export default function TitleRow({
 					{titles.map((title) => (
 						<CarouselItem
 							key={`${title.media_type}-${title.id}`}
-							className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/6"
+							className="pl-2 md:pl-4 basis-1/2 sm:basis-1/4 md:basis-1/4 lg:basis-1/6"
 						>
 							<MovieCard movie={title} />
 						</CarouselItem>

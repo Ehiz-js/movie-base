@@ -20,7 +20,7 @@ export default async function Home() {
 			{/* Films only, as the hero is about headline titles. The negative
 			    margin cancels the mobile clearance the layout adds for the fixed
 			    navbar, so the backdrop runs to the top of the page behind it. */}
-			<div className="-mt-20 lg:mt-0">
+			<div className="mt-25">
 				<HeroCarousel titles={popularMovies.slice(0, 5)} />
 			</div>
 
