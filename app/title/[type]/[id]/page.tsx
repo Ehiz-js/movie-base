@@ -94,13 +94,14 @@ export default async function TitlePage({
 
 	return (
 		<>
-			<section className="relative">
-				<div className="absolute inset-0 h-[70vh]">
+			<section className="relative overflow-hidden">
+				<div className="absolute inset-0 h-[70vh] overflow-hidden">
 					<Image
 						src={backdropUrl}
 						alt=""
 						fill
 						priority
+						sizes="100vw"
 						className="object-cover"
 					/>
 					<div className="absolute inset-0 bg-linear-to-t from-(--background) via-(--background)/80 to-black/50" />
