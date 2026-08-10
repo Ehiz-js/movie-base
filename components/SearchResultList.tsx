@@ -39,7 +39,9 @@ export default function SearchResultList({
 			) : (
 				<>
 					{searchResults.map((movie: MovieType) => (
-						<li key={movie.id}>
+						// A film and a series can share an id, and multi-search returns
+						// both, so the pair is what identifies a result.
+						<li key={`${movie.media_type}-${movie.id}`}>
 							<SearchResult movie={movie} />
 						</li>
 					))}

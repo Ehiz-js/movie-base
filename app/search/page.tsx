@@ -55,7 +55,8 @@ export default async function SearchPage({
 				) : (
 					<ul className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-350">
 						{results.map((movie) => (
-							<li key={movie.id}>
+							// Films and series share an id space, so the pair is the key.
+							<li key={`${movie.media_type}-${movie.id}`}>
 								<MovieCard movie={movie} />
 							</li>
 						))}
