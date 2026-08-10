@@ -85,7 +85,7 @@ export default function MovieCard({
 				</div>
 
 				<div className="p-2.5">
-					<h3 className="truncate text-sm font-semibold" title={movie.title}>
+					<h3 className="truncate text-xs font-semibold" title={movie.title}>
 						{movie.title}
 					</h3>
 					{year && <p className="mt-0.5 text-xs text-gray-400">{year}</p>}
