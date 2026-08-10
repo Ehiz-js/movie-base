@@ -5,7 +5,7 @@ import { FaStar } from "react-icons/fa";
 
 export default function SearchResult({ movie }: { movie: MovieType }) {
 	const { title, poster_path, id, vote_average, media_type } = movie;
-	const posterUrl = `https://image.tmdb.org/t/p/w92${poster_path}`;
+	const posterUrl = `https://image.tmdb.org/t/p/w185${poster_path}`;
 	return (
 		<Link
 			href={`/title/${media_type}/${id}`}
