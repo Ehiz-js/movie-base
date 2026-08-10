@@ -1,5 +1,12 @@
 import { tmdbFetch } from "@/lib/tmdbServer";
-import { MediaType, MovieType } from "@/types/movie";
+import {
+	EpisodeType,
+	MediaType,
+	MovieType,
+	SeasonSummary,
+	VideoType,
+	WatchProviders,
+} from "@/types/movie";
 import { findGenre, genreNamesForTmdbId, type GenreMapping } from "@/lib/genres";
 
 /**
@@ -36,6 +43,10 @@ export function normalizeTitle(raw: RawTitle, mediaType: MediaType): MovieType {
 		adult: get<boolean>("adult"),
 		genre_ids: get<number[]>("genre_ids"),
 		genres: get<{ id: number; name: string }[]>("genres"),
+		seasons: get<SeasonSummary[]>("seasons")?.filter(
+			// Season 0 is TMDB's bucket for specials; it is not part of the run.
+			(season) => season.season_number > 0,
+		),
 	};
 }
 
@@ -210,4 +221,67 @@ export async function fetchGenreTitles(
 	page = "1",
 ): Promise<MovieType[]> {
 	return fetchBlendedTitles({ page, genre: genreName });
+}
+
+
+/**
+ * A title plus the extras its page needs. TMDB's append_to_response returns
+ * them in the same request, so this is one round trip rather than three.
+ */
+export async function fetchTitleDetail(
+	mediaType: MediaType,
+	id: string,
+): Promise<{
+	title: MovieType;
+	trailer: VideoType | null;
+	providers: WatchProviders | null;
+} | null> {
+	try {
+		const raw = await tmdbFetch<
+			RawTitle & {
+				videos?: { results: VideoType[] };
+				"watch/providers"?: { results: Record<string, WatchProviders> };
+			}
+		>(`/${mediaType}/${encodeURIComponent(id)}`, {
+			append_to_response: "videos,watch/providers",
+		});
+
+		return {
+			title: normalizeTitle(raw, mediaType),
+			trailer: pickTrailer(raw.videos?.results ?? []),
+			// Providers are per country; US has the widest coverage, so it is the
+			// fallback when the visitor's region has no listing.
+			providers: raw["watch/providers"]?.results?.US ?? null,
+		};
+	} catch (error) {
+		console.error(error);
+		return null;
+	}
+}
+
+/** Prefers an official trailer, then any trailer, then any teaser. */
+function pickTrailer(videos: VideoType[]): VideoType | null {
+	const youtube = videos.filter((video) => video.site === "YouTube");
+	return (
+		youtube.find((v) => v.type === "Trailer" && v.official) ??
+		youtube.find((v) => v.type === "Trailer") ??
+		youtube.find((v) => v.type === "Teaser") ??
+		null
+	);
+}
+
+/** Every episode of one season. */
+export async function fetchSeason(
+	tvId: string | number,
+	seasonNumber: number,
+): Promise<EpisodeType[]> {
+	try {
+		const data = await tmdbFetch<{ episodes: EpisodeType[] }>(
+			`/tv/${encodeURIComponent(String(tvId))}/season/${seasonNumber}`,
+		);
+		return data.episodes ?? [];
+	} catch (error) {
+		console.error(error);
+		return [];
+	}
 }
