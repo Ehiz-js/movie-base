@@ -38,6 +38,8 @@ export interface MovieType extends MovieSummary {
 	popularity?: number;
 	release_date?: string;
 	video?: boolean;
+	/** Series only: the seasons that make up the run, specials excluded. */
+	seasons?: SeasonSummary[];
 	vote_count?: number;
 }
 
@@ -98,4 +100,47 @@ export interface CommentType {
 	username: string;
 	content: string;
 	created_at?: string;
+}
+
+export interface SeasonSummary {
+	id: number;
+	season_number: number;
+	name: string;
+	episode_count: number;
+	air_date?: string;
+	poster_path?: string;
+	overview?: string;
+}
+
+export interface EpisodeType {
+	id: number;
+	episode_number: number;
+	season_number: number;
+	name: string;
+	overview?: string;
+	still_path?: string;
+	air_date?: string;
+	runtime?: number;
+	vote_average?: number;
+}
+
+export interface VideoType {
+	key: string;
+	name: string;
+	site: string;
+	type: string;
+	official?: boolean;
+}
+
+export interface WatchProvider {
+	provider_id: number;
+	provider_name: string;
+	logo_path: string;
+}
+
+export interface WatchProviders {
+	link?: string;
+	flatrate?: WatchProvider[];
+	rent?: WatchProvider[];
+	buy?: WatchProvider[];
 }
