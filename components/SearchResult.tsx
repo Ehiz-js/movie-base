@@ -1,4 +1,5 @@
 import { MovieType } from "@/types/movie";
+import Image from "next/image";
 import Link from "next/link";
 import { FaStar } from "react-icons/fa";
 
@@ -11,11 +12,19 @@ export default function SearchResult({ movie }: { movie: MovieType }) {
 			className="flex items-center w-full p-2 hover:bg-purple-950 transition-colors duration-200"
 		>
 			<div className="flex items-center ">
-				<img
-					src={posterUrl}
-					alt={title}
-					className="rounded-lg w-[60px] h-auto object-cover flex-shrink-0"
-				/>
+				{poster_path ? (
+					<Image
+						src={posterUrl}
+						alt={title}
+						width={60}
+						height={90}
+						className="rounded-lg object-cover shrink-0"
+					/>
+				) : (
+					<div className="grid h-[90px] w-[60px] shrink-0 place-items-center rounded-lg bg-white/5 text-[10px] text-gray-500">
+						No art
+					</div>
+				)}
 				<div className="flex flex-col justify-center w-full ml-3">
 					<h2 className="font-medium text-sm md:text-base">{title}</h2>
 					<div className="flex items-center gap-1 mt-1">

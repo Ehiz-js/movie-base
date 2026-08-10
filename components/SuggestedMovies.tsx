@@ -18,7 +18,7 @@ export function SuggestedMovies({ movies }: { movies: MovieType[] }) {
 			// 1. Used a viewport width (vw) for mobile to leave room for arrows, and mx-auto to center it
 			className="w-full max-w-[75vw] sm:max-w-md md:max-w-3xl lg:max-w-5xl mx-auto"
 		>
-			<CarouselContent className="-ml-2 md:-ml-4">
+			<CarouselContent className="-ml-2 md:-ml-4 items-stretch">
 				{movies.map((movie) => (
 					// 2. Responsive basis: 1 card on mobile, 2 on small screens, 3 on tablet, 4 on desktop
 					<CarouselItem
