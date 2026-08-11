@@ -15,9 +15,20 @@ import { FaStar, FaTimes } from "react-icons/fa";
 export default function MovieCard({
 	movie,
 	onDelete,
+	progress,
+	subtitle,
+	href: hrefOverride,
 }: {
 	movie: MovieSummary & { id_supabase?: string; release_date?: string };
 	onDelete?: (idSupabase: string) => void;
+	/** 0–1. Draws a thin watched-so-far bar under the poster — the Continue
+	 *  Watching row is the only caller that passes this. */
+	progress?: number;
+	/** Replaces the year line — Continue Watching shows "S2 E5" here instead. */
+	subtitle?: string;
+	/** Overrides the computed detail-page link — Continue Watching points
+	 *  straight at the resume episode instead of the title's default one. */
+	href?: string;
 }) {
 	const { user } = useAuth();
 	// Anime posters already arrive as full AniList CDN URLs; everything else is a
@@ -32,9 +43,10 @@ export default function MovieCard({
 		? movie.vote_average.toFixed(1)
 		: null;
 	const href =
-		movie.media_type === "anime"
+		hrefOverride ??
+		(movie.media_type === "anime"
 			? `/anime/${movie.id}`
-			: `/title/${movie.media_type}/${movie.id}`;
+			: `/title/${movie.media_type}/${movie.id}`);
 	const badge =
 		movie.media_type === "anime"
 			? "Anime"
@@ -100,15 +112,26 @@ export default function MovieCard({
 
 					{/* Keeps the title legible when a poster is bright at the bottom. */}
 					<div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
+
+					{typeof progress === "number" && (
+						<div className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
+							<div
+								className="h-full bg-(--purple-dark)"
+								style={{ width: `${progress * 100}%` }}
+							/>
+						</div>
+					)}
 				</div>
 
 				<div className="p-2.5">
 					<h3 className="truncate text-xs font-semibold" title={movie.title}>
 						{movie.title}
 					</h3>
-					{/* Rendered even when the year is unknown, so a missing date cannot
-					    make one card shorter than its neighbours. */}
-					<p className="mt-0.5 text-xs text-gray-400">{year ?? "\u00A0"}</p>
+					{/* Rendered even when both are unknown, so a missing one cannot make
+					    one card shorter than its neighbours. */}
+					<p className="mt-0.5 text-xs text-gray-400">
+						{subtitle ?? year ?? "\u00A0"}
+					</p>
 				</div>
 			</Link>
 

@@ -1,8 +1,8 @@
 -- Movie Base — database schema
 --
 -- Run this in the Supabase SQL editor (Dashboard → SQL Editor → New query).
--- It creates the four tables the app needs (watchlist, recent_movies,
--- comments, profiles) with row level security enabled.
+-- It creates the five tables the app needs (watchlist, recent_movies,
+-- comments, profiles, watch_progress) with row level security enabled.
 --
 -- Safe to run on a clean project OR on one that already has these tables from
 -- working through tasks 5-9: it reshapes whatever is there to what the app
@@ -75,6 +75,26 @@ create table if not exists public.profiles (
   user_id    uuid not null unique references auth.users (id) on delete cascade,
   username   text not null,
   created_at timestamptz not null default now()
+);
+
+-- Continue Watching. One row per (user, media_type, movie_id) — always
+-- overwritten via upsert, never appended — sourced from whatever the VidLink
+-- (movie/tv) or AniXo (anime) embed reports back over postMessage. `season`/
+-- `episode` are null for films, which have nothing to resume mid-way through
+-- besides the timestamp itself.
+create table if not exists public.watch_progress (
+  id_supabase uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  movie_id    bigint not null,
+  media_type  text not null check (media_type in ('movie', 'tv', 'anime')),
+  title       text not null,
+  poster_path text not null default '',
+  season      integer,
+  episode     integer,
+  watched     numeric not null,
+  duration    numeric not null,
+  updated_at  timestamptz not null default now(),
+  unique (user_id, media_type, movie_id)
 );
 
 -- A profile used to also store genre, language and maturity preferences that
@@ -180,16 +200,17 @@ begin
   for r in
     select schemaname, tablename, policyname from pg_policies
     where schemaname = 'public'
-      and tablename in ('watchlist', 'recent_movies', 'comments', 'profiles')
+      and tablename in ('watchlist', 'recent_movies', 'comments', 'profiles', 'watch_progress')
   loop
     execute format('drop policy %I on %I.%I', r.policyname, r.schemaname, r.tablename);
   end loop;
 end $$;
 
-alter table public.watchlist     enable row level security;
-alter table public.recent_movies enable row level security;
-alter table public.comments      enable row level security;
-alter table public.profiles      enable row level security;
+alter table public.watchlist      enable row level security;
+alter table public.recent_movies  enable row level security;
+alter table public.comments       enable row level security;
+alter table public.profiles       enable row level security;
+alter table public.watch_progress enable row level security;
 
 create policy "watchlist: read own"   on public.watchlist for select using (auth.uid() = user_id);
 create policy "watchlist: insert own" on public.watchlist for insert with check (auth.uid() = user_id);
@@ -211,15 +232,23 @@ create policy "profiles: insert own" on public.profiles for insert with check (a
 create policy "profiles: update own" on public.profiles for update
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+create policy "watch_progress: read own"   on public.watch_progress for select using (auth.uid() = user_id);
+create policy "watch_progress: insert own" on public.watch_progress for insert with check (auth.uid() = user_id);
+-- Required for the upsert, same reason as recent_movies above.
+create policy "watch_progress: update own" on public.watch_progress for update
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "watch_progress: delete own" on public.watch_progress for delete using (auth.uid() = user_id);
+
 -- ---------------------------------------------------------------------------
 -- 4. Indexes and grants
 -- ---------------------------------------------------------------------------
 
-create index if not exists recent_movies_user_viewed_idx on public.recent_movies (user_id, viewed_at desc);
-create index if not exists comments_movie_created_idx    on public.comments (movie_id, created_at desc);
+create index if not exists recent_movies_user_viewed_idx   on public.recent_movies (user_id, viewed_at desc);
+create index if not exists comments_movie_created_idx       on public.comments (movie_id, created_at desc);
+create index if not exists watch_progress_user_updated_idx  on public.watch_progress (user_id, updated_at desc);
 
 grant select, insert, update, delete
-  on public.watchlist, public.recent_movies, public.comments, public.profiles
+  on public.watchlist, public.recent_movies, public.comments, public.profiles, public.watch_progress
   to authenticated;
 grant select on public.comments to anon;
 

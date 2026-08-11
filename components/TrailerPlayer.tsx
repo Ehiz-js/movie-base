@@ -1,8 +1,10 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaPlay, FaServer } from "react-icons/fa";
+import { useAuth } from "@/contexts/AuthContext";
 import { MovieType, VideoType } from "@/types/movie";
+import { PROGRESS_SAVE_INTERVAL_MS, saveWatchProgress } from "@/lib/watchProgress";
 
 type Source = "watch" | "trailer";
 
@@ -40,11 +42,83 @@ export default function TrailerPlayer({
 	seasonNumber?: number;
 	episodeNumber?: number;
 }) {
+	const { user } = useAuth();
 	const [playing, setPlaying] = useState(false);
 	const [source, setSource] = useState<Source>("watch");
 
 	// 2. State to track which server the user selected
 	const [activeServerIdx, setActiveServerIdx] = useState(0);
+	// Seeded with the mount time, not 0 — otherwise the very first MEDIA_DATA
+	// tick always passes the throttle (Date.now() - 0 is trivially past 10s)
+	// and saves whatever near-zero position happens to be current at that
+	// instant, before any real progress has had a chance to accumulate.
+	const lastSavedAtRef = useRef(Date.now());
+
+	// VidLink broadcasts its whole watch-progress object (every title it has
+	// ever seen, not just this one) whenever it changes. Only this title's own
+	// entry is pulled out and saved — Continue Watching is Supabase-backed
+	// (lib/watchProgress.ts), so there's nothing signed-out visitors can save.
+	useEffect(() => {
+		function handleMessage(event: MessageEvent) {
+			if (event.origin !== "https://vidlink.pro") return;
+			if (event.data?.type !== "MEDIA_DATA" || !user) return;
+			if (Date.now() - lastSavedAtRef.current < PROGRESS_SAVE_INTERVAL_MS) return;
+
+			const all = event.data.data as Record<
+				string,
+				{
+					id: number | string;
+					type: string;
+					// Top-level: frozen at whatever the show's very first-ever
+					// watched episode looked like — never updates again. Real,
+					// per-episode, continuously-updating data lives one level
+					// down, keyed "s{season}e{episode}" — confirmed against a
+					// live payload dump where the top-level fields stayed
+					// identical across three snapshots taken seconds apart while
+					// the nested s7e17 entry was clearly live.
+					progress?: { watched: number; duration: number };
+					show_progress?: Record<
+						string,
+						{ progress?: { watched: number; duration: number } }
+					>;
+				}
+			>;
+			const match = Object.values(all).find(
+				(entry) => String(entry.id) === String(movie.id) && entry.type === mediaType,
+			);
+			if (!match) return;
+
+			let watched: number;
+			let duration: number;
+			if (mediaType === "tv") {
+				const episodeEntry = match.show_progress?.[`s${seasonNumber}e${episodeNumber}`];
+				if (!episodeEntry?.progress?.duration) return;
+				watched = episodeEntry.progress.watched;
+				duration = episodeEntry.progress.duration;
+			} else {
+				if (!match.progress?.duration) return;
+				watched = match.progress.watched;
+				duration = match.progress.duration;
+			}
+
+			lastSavedAtRef.current = Date.now();
+			saveWatchProgress(user.id, {
+				movie_id: movie.id,
+				media_type: mediaType,
+				title: movie.title,
+				poster_path: movie.poster_path,
+				// Known from our own state already — no need to trust VidLink's
+				// own last_season_watched/last_episode_watched, which lagged
+				// behind the actual current episode in the same payload dump.
+				season: mediaType === "tv" ? seasonNumber : null,
+				episode: mediaType === "tv" ? episodeNumber : null,
+				watched,
+				duration,
+			});
+		}
+		window.addEventListener("message", handleMessage);
+		return () => window.removeEventListener("message", handleMessage);
+	}, [user, movie.id, movie.title, movie.poster_path, mediaType, seasonNumber, episodeNumber]);
 
 	const id = movie.id;
 	const backdrop = backdropPath
@@ -55,11 +129,11 @@ export default function TrailerPlayer({
 	const getEmbedUrl = () => {
 		const server = SERVERS[activeServerIdx].id;
 		const customParams =
-			"primaryColor=5b21b6&secondaryColor=0a0a0a&icons=default&iconColor=ffffff&title=true&poster=true&autoplay=true&player=jw";
+			"primaryColor=5b21b6&secondaryColor=0a0a0a&icons=default&iconColor=ffffff&title=true&poster=true&player=jw&";
 
 		if (mediaType === "tv") {
 			if (server === "vidlink")
-				return `https://vidlink.pro/tv/${id}/${seasonNumber}/${episodeNumber}?nextbutton=true&${customParams}`;
+				return `https://vidlink.pro/tv/${id}/${seasonNumber}/${episodeNumber}?${customParams}`;
 			if (server === "vidsrc_me")
 				return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNumber}&episode=${episodeNumber}`;
 			if (server === "vidsrc_to")

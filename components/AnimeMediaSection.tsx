@@ -12,6 +12,8 @@ export default function AnimeMediaSection({
 	initialEpisodes,
 	initialHasNextPage,
 	totalEpisodes,
+	initialEpisode,
+	initialTime,
 }: {
 	anilistId: number;
 	title: string;
@@ -20,9 +22,17 @@ export default function AnimeMediaSection({
 	initialEpisodes: AnimeEpisode[];
 	initialHasNextPage: boolean;
 	totalEpisodes: number | null;
+	/** Resume point from a Continue Watching link (`?episode=`), when set —
+	 *  otherwise the first episode the page shipped with. */
+	initialEpisode?: number;
+	/** Seconds into `initialEpisode` to resume at (`?t=`). Only ever applies
+	 *  to that landing episode — switching episodes manually afterward plays
+	 *  from the start like normal. */
+	initialTime?: number;
 }) {
+	const resumeEpisode = initialEpisode;
 	const [activeEpisode, setActiveEpisode] = useState(
-		initialEpisodes[0]?.number ?? 1,
+		initialEpisode ?? initialEpisodes[0]?.number ?? 1,
 	);
 
 	return (
@@ -33,6 +43,7 @@ export default function AnimeMediaSection({
 				posterUrl={posterUrl}
 				title={title}
 				trailerEmbedUrl={trailerEmbedUrl}
+				resumeAt={activeEpisode === resumeEpisode ? initialTime : undefined}
 			/>
 
 			{initialEpisodes.length > 0 && (

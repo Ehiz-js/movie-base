@@ -36,10 +36,21 @@ export async function generateMetadata({
 
 export default async function AnimePage({
 	params,
+	searchParams,
 }: {
 	params: Promise<{ id: string }>;
+	searchParams: Promise<{ episode?: string; t?: string }>;
 }) {
 	const { id } = await params;
+	const { episode, t } = await searchParams;
+	// Set by Continue Watching links, so resuming actually resumes instead of
+	// always restarting at episode 1 (which would also overwrite the saved
+	// progress the next time the player reports in).
+	const parsedEpisode = episode ? Number.parseInt(episode, 10) : NaN;
+	const initialEpisode = Number.isFinite(parsedEpisode) ? parsedEpisode : undefined;
+	// Seconds into that episode to seek to once the player's ready.
+	const parsedTime = t ? Number.parseFloat(t) : NaN;
+	const initialTime = Number.isFinite(parsedTime) ? parsedTime : undefined;
 
 	// One request for the title itself, one for its first page of episodes —
 	// both come straight from AniList, so the episode numbers the player gets
@@ -183,6 +194,8 @@ export default async function AnimePage({
 					initialEpisodes={firstPage.episodes}
 					initialHasNextPage={firstPage.hasNextPage}
 					totalEpisodes={anime.episodes}
+					initialEpisode={initialEpisode}
+					initialTime={initialTime}
 				/>
 			</section>
 

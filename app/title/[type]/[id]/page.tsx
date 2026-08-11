@@ -51,8 +51,10 @@ export async function generateMetadata({
 
 export default async function TitlePage({
 	params,
+	searchParams,
 }: {
 	params: Promise<{ type: string; id: string }>;
+	searchParams: Promise<{ season?: string; episode?: string }>;
 }) {
 	const { type, id } = await params;
 	const mediaType = parseMediaType(type);
@@ -68,11 +70,25 @@ export default async function TitlePage({
 	const seasons = movie.seasons ?? [];
 	const firstSeason = seasons[0]?.season_number;
 
+	// Set by Continue Watching links (`?season=&episode=`), so resuming a
+	// series actually resumes instead of always restarting at S1E1 — which
+	// would then overwrite the very progress the link was pointing at.
+	const { season, episode } = await searchParams;
+	const requestedSeason = season ? Number.parseInt(season, 10) : NaN;
+	const initialSeason =
+		Number.isFinite(requestedSeason) &&
+		seasons.some((s) => s.season_number === requestedSeason)
+			? requestedSeason
+			: firstSeason;
+	const parsedEpisode = episode ? Number.parseInt(episode, 10) : NaN;
+	const initialEpisode = Number.isFinite(parsedEpisode) ? parsedEpisode : undefined;
+
 	const [suggestedMovieList, firstSeasonEpisodes] = await Promise.all([
 		fetchSuggested(movie),
-		// Only the opening season ships with the page; the rest load on demand.
-		mediaType === "tv" && firstSeason !== undefined
-			? fetchSeason(movie.id, firstSeason)
+		// Only the resolved opening season ships with the page; the rest load
+		// on demand.
+		mediaType === "tv" && initialSeason !== undefined
+			? fetchSeason(movie.id, initialSeason)
 			: Promise.resolve([]),
 	]);
 
@@ -178,9 +194,10 @@ export default async function TitlePage({
 					backdropPath={backdrop_path}
 					title={title}
 					seasons={seasons}
-					firstSeason={firstSeason}
+					firstSeason={initialSeason}
 					firstSeasonEpisodes={firstSeasonEpisodes}
 					mediaType={mediaType}
+					initialEpisode={initialEpisode}
 				/>
 			</section>
 

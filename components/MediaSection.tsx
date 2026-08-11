@@ -18,6 +18,7 @@ export default function MediaSection({
 	firstSeason,
 	firstSeasonEpisodes,
 	mediaType,
+	initialEpisode,
 }: {
 	movie: MovieType;
 	trailer: VideoType | null;
@@ -27,6 +28,9 @@ export default function MediaSection({
 	firstSeason?: number;
 	firstSeasonEpisodes: EpisodeType[];
 	mediaType: "movie" | "tv";
+	/** Resume point from a Continue Watching link (`?episode=`), when set —
+	 *  otherwise the first episode of the resolved opening season. */
+	initialEpisode?: number;
 }) {
 	// Track the active season and episode locally on the client
 	const [activeSeason, setActiveSeason] = useState(firstSeason ?? 1);
@@ -34,7 +38,7 @@ export default function MediaSection({
 	// always open on episode 1 — TMDB numbers some runs from a later episode —
 	// so hardcoding 1 would point the player somewhere the grid is not.
 	const [activeEpisode, setActiveEpisode] = useState(
-		firstSeasonEpisodes[0]?.episode_number ?? 1,
+		initialEpisode ?? firstSeasonEpisodes[0]?.episode_number ?? 1,
 	);
 
 	return (

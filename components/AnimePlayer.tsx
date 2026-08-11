@@ -1,8 +1,10 @@
 "use client";
 import Image from "next/image";
 import Script from "next/script";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaClosedCaptioning, FaMicrophone, FaPlay } from "react-icons/fa6";
+import { useAuth } from "@/contexts/AuthContext";
+import { PROGRESS_SAVE_INTERVAL_MS, saveWatchProgress } from "@/lib/watchProgress";
 
 type Source = "watch" | "trailer";
 type Audio = "sub" | "dub";
@@ -26,19 +28,96 @@ export default function AnimePlayer({
 	posterUrl,
 	title,
 	trailerEmbedUrl,
+	resumeAt,
 }: {
 	anilistId: number;
 	episodeNumber: number;
 	posterUrl: string | null;
 	title: string;
 	trailerEmbedUrl?: string;
+	/** Seconds into the episode to seek to once the player reports ready —
+	 *  set by a Continue Watching link. Undefined plays from the start. */
+	resumeAt?: number;
 }) {
+	const { user } = useAuth();
 	const [playing, setPlaying] = useState(false);
 	const [source, setSource] = useState<Source>("watch");
 	const [audio, setAudio] = useState<Audio>("sub");
+	const iframeRef = useRef<HTMLIFrameElement>(null);
+	// Seeded with the mount time, not 0 — otherwise the very first tick always
+	// passes the throttle (Date.now() - 0 is trivially past 10s) and saves
+	// whatever near-zero position happens to be current at that instant,
+	// before any real progress has had a chance to accumulate.
+	const lastSavedAtRef = useRef(Date.now());
+	// aniko:pause carries no data of its own (per AniXo's docs), so the most
+	// recent timeupdate is cached here to flush on pause instead.
+	const lastKnownRef = useRef<{ currentTime: number; duration: number } | null>(null);
+	// Guards against re-seeking on a later, unrelated aniko:ready — reset
+	// whenever the iframe itself remounts (episode or audio track changes).
+	const hasResumedRef = useRef(false);
 
 	const active: Source = source === "trailer" && !trailerEmbedUrl ? "watch" : source;
 	const watchUrl = `${ANIXO_ORIGIN}/embed/ani/${anilistId}/${episodeNumber}/${audio}?color=%235b21b6`;
+
+	useEffect(() => {
+		hasResumedRef.current = false;
+	}, [episodeNumber, audio]);
+
+	// AniXo supports seeking over postMessage (`aniko:seek`) — the embed URL
+	// itself has no query param for a start time, so resuming means waiting
+	// for the player to report ready, then telling it where to jump to.
+	useEffect(() => {
+		if (!resumeAt) return;
+		function handleReady(event: MessageEvent) {
+			if (event.origin !== ANIXO_ORIGIN) return;
+			if (event.data?.type === "aniko:ready" && !hasResumedRef.current) {
+				hasResumedRef.current = true;
+				iframeRef.current?.contentWindow?.postMessage(
+					{ type: "aniko:seek", time: resumeAt },
+					ANIXO_ORIGIN,
+				);
+			}
+		}
+		window.addEventListener("message", handleReady);
+		return () => window.removeEventListener("message", handleReady);
+	}, [resumeAt, episodeNumber, audio]);
+
+	// AniXo has no VidLink-style MEDIA_DATA broadcast — it only reports the
+	// current playhead, so this is what turns that into the same kind of
+	// resumable record the Continue Watching row reads back out.
+	useEffect(() => {
+		function save(currentTime: number, duration: number) {
+			if (!duration || !user) return;
+			saveWatchProgress(user.id, {
+				movie_id: anilistId,
+				media_type: "anime",
+				title,
+				poster_path: posterUrl ?? "",
+				episode: episodeNumber,
+				watched: currentTime,
+				duration,
+			});
+			lastSavedAtRef.current = Date.now();
+		}
+
+		function handleMessage(event: MessageEvent) {
+			if (event.origin !== ANIXO_ORIGIN) return;
+			if (event.data?.type === "aniko:timeupdate") {
+				lastKnownRef.current = {
+					currentTime: event.data.currentTime,
+					duration: event.data.duration,
+				};
+				if (Date.now() - lastSavedAtRef.current < PROGRESS_SAVE_INTERVAL_MS) return;
+				save(event.data.currentTime, event.data.duration);
+			} else if (event.data?.type === "aniko:pause" && lastKnownRef.current) {
+				// Bypasses the throttle — pausing is exactly the moment a viewer
+				// is most likely to actually leave.
+				save(lastKnownRef.current.currentTime, lastKnownRef.current.duration);
+			}
+		}
+		window.addEventListener("message", handleMessage);
+		return () => window.removeEventListener("message", handleMessage);
+	}, [anilistId, episodeNumber, title, posterUrl, user]);
 
 	return (
 		<div className="flex flex-col gap-3">
@@ -57,6 +136,7 @@ export default function AnimePlayer({
 						/>
 					) : (
 						<iframe
+							ref={iframeRef}
 							// Audio track is part of the key too, so switching sub/dub
 							// starts the embed fresh rather than reusing a stalled frame.
 							key={`watch-${audio}-${episodeNumber}`}

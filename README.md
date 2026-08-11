@@ -32,7 +32,7 @@ Films and series from [TMDB](https://www.themoviedb.org/), anime from [AniList](
 
 **Anime** — synopsis, genres, score, and a season/part switcher (AniList gives every season of a show its own id, so "Attack on Titan" and "Attack on Titan Season 2" are linked, not merged). Long-running shows — One Piece, Naruto — get an accurate episode count even mid-run, and a "Newest first" toggle so catching up doesn't mean paging through a thousand episodes from the start. Playback supports Sub/Dub.
 
-**Yours** — a watchlist with a confirmation email, a comment thread per title, and a recently-viewed strip that remembers the last day of browsing — anime included.
+**Yours** — a watchlist with a confirmation email, a comment thread per title, a recently-viewed strip that remembers the last day of browsing, and a Continue Watching row that picks up exactly where you left off — episode, season, and timestamp — across films, series and anime alike.
 
 ## Features
 
@@ -44,6 +44,7 @@ Films and series from [TMDB](https://www.themoviedb.org/), anime from [AniList](
 | ▶️ **Trailers** | Loaded only when pressed, for films/series and anime alike |
 | 🌀 **Multi-server playback** | Four fallback servers for films/series; a dedicated Sub/Dub player for anime |
 | ⏪ **Newest-first episodes** | One click to jump to the latest episode of a 1000+ episode show, instead of paging through from #1 |
+| ▶️ **Continue Watching** | Resumes the exact episode and timestamp, per account — rolls forward to the next episode (or season) once you finish one, drops a title once there's truly nothing left |
 | 🔍 **Search** | Debounced, blends TMDB and AniList results, dropdown preview + results page |
 | ⭐ **Watchlist** | Saved per user, with an email confirmation |
 | 💬 **Comments** | Per title, with delete and relative timestamps |
@@ -94,7 +95,7 @@ Anime data needs nothing configured — AniList's GraphQL API is public, no key 
 
 **3 — Create the database**
 
-Paste [`supabase/schema.sql`](supabase/schema.sql) into the Supabase SQL editor and run it. It creates four tables — `watchlist`, `recent_movies`, `comments`, `profiles` — with row level security enabled, and is safe to re-run. `media_type` on each accepts `'movie'`, `'tv'` or `'anime'`.
+Paste [`supabase/schema.sql`](supabase/schema.sql) into the Supabase SQL editor and run it. It creates five tables — `watchlist`, `recent_movies`, `comments`, `profiles`, `watch_progress` — with row level security enabled, and is safe to re-run. `media_type` on each accepts `'movie'`, `'tv'` or `'anime'`.
 
 > RLS is not optional here. The browser talks to Supabase with the anon key, so without those policies that key would let anyone read and write every row.
 
@@ -176,6 +177,23 @@ Pages are Server Components, so the browser never fetches the grid after load. A
 
 </details>
 
+<details>
+<summary><b>Continue Watching</b></summary>
+
+<br>
+
+Backed by Supabase (`watch_progress`, one row per `user_id` + `media_type` + `movie_id`, upserted — never appended), not `localStorage`. That started as a `localStorage`-only cache of whatever the VidLink embed broadcast over `postMessage`, which had two real problems: it didn't respect login at all (any two people sharing a browser mixed up their progress), and VidLink's own cross-origin memory would silently re-sync a "cleared" `localStorage` right back, since clearing our origin's storage can't touch `vidlink.pro`'s.
+
+Both players throttle their own writes to roughly one every 10 seconds while actually playing — `AnimePlayer.tsx` also flushes immediately on `aniko:pause` (bypassing the throttle) since AniXo has no equivalent of VidLink's own broadcast cadence.
+
+Finishing an episode doesn't drop it from the row — for films that's genuinely the end, but for series/anime it rolls forward to the next episode instead (or the next season, or off the row entirely if there truly isn't a next one), checked against the show's real season lengths (`app/api/tv/[id]/seasons`) or AniList's total episode count (`app/api/anime/[id]`) rather than assumed.
+
+Resuming a series mid-episode is entirely VidLink's own doing — it remembers your position on its own origin and resumes automatically once the iframe loads, no seek call needed from us. Anime is different: AniXo has no such memory, so `AnimePlayer.tsx` explicitly calls its documented `aniko:seek` over `postMessage` once the embed reports `aniko:ready`.
+
+The trickiest bug here: VidLink's progress object turned out to have two *different* progress fields for a series — a frozen, top-level `progress` (a snapshot from the very first episode the show ever had watched, which never updates again) and the real, live, per-episode data nested under `show_progress["s{season}e{episode}"]`. Reading the wrong one made every TV show's saved progress look permanently stuck — confirmed by literally logging VidLink's raw broadcast and watching the top-level field stay byte-for-byte identical across snapshots taken seconds apart while the nested entry for the actual episode being watched was clearly live.
+
+</details>
+
 ## Project structure
 
 ```
@@ -189,12 +207,15 @@ app/
 ├─ onboarding/                   Profile
 ├─ auth/                         Login, signup, password reset
 └─ api/                          TMDB/AniList proxies + watchlist email
+   ├─ tv/[id]/seasons/            Season lengths — Continue Watching rollover
+   └─ anime/[id]/                 Total episode count — same, for anime
 
 components/                      UI (components/ui/* are shadcn primitives)
 ├─ TrailerPlayer.tsx             Film/series player — 4 fallback servers
 ├─ AnimePlayer.tsx               Anime player — AniXo, Sub/Dub
 ├─ SeasonBrowser.tsx             Series season/episode picker
-└─ AnimeEpisodeBrowser.tsx       Anime episode picker — paginated, reversible
+├─ AnimeEpisodeBrowser.tsx       Anime episode picker — paginated, reversible
+└─ ContinueWatchingRow.tsx       Resume strip — Supabase-backed, signed-in only
 
 contexts/AuthContext.tsx         Session and profile
 lib/
@@ -202,6 +223,7 @@ lib/
 ├─ anilist.ts                    AniList GraphQL fetching
 ├─ genres.ts                     Genre equivalence map
 ├─ tmdbServer.ts                 Server-only TMDB client
+├─ watchProgress.ts              Continue Watching — Supabase upsert/fetch
 ├─ supabase.ts                   Browser Supabase client
 ├─ supabaseServer.ts             Route-handler client + token verification
 ├─ sendEmail.ts                  Resend / SMTP

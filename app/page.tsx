@@ -1,3 +1,4 @@
+import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import HeroCarousel from "@/components/HeroCarousel";
 import RecentMovieList from "@/components/RecentMovieList";
 import TitleRow from "@/components/TitleRow";
@@ -28,6 +29,7 @@ export default async function Home() {
 			</div>
 
 			<div className="mt-10">
+				<ContinueWatchingRow />
 				<RecentMovieList />
 
 				<TitleRow
