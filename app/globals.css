@@ -36,6 +36,21 @@ body {
 	color: var(--foreground);
 	font-family: Arial, Helvetica, sans-serif;
 }
-::-webkit-scrollbar {
-	display: none;
+
+/* Same purple scrollbar as the search results dropdown, applied site-wide
+   instead of hiding the scrollbar entirely. */
+html {
+	scrollbar-width: thin;
+	scrollbar-color: var(--purple-dark) transparent;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background-color: var(--purple-dark);
+	border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+	background-color: #a855f7;
 }

@@ -20,6 +20,16 @@
 
 ---
 
+## Legal & compliance
+
+This is a personal, educational portfolio project — built to demonstrate full-stack architecture (dual data pipelines, auth, database design with row-level security, resumable playback UI) using publicly available metadata APIs. It is not a commercial product and is not monetized.
+
+**This repository does not host, upload, store, or distribute any video or media content whatsoever.** All film, series and anime *metadata* (titles, posters, synopses, ratings, genres) comes from [TMDB](https://www.themoviedb.org/) and [AniList](https://anilist.co/), both public, licensed APIs intended for exactly this kind of use.
+
+Playback works by embedding third-party players (VidLink, VidSrc, SuperEmbed, AniXo) in an `<iframe>` — the same mechanism any site uses to embed a YouTube video. This app does not control, vet, cache, or have any relationship with what those third-party services choose to host; it only points a standard iframe at a URL they publish. Any concern about the content those services serve belongs with those services, not this codebase, which contains no copyrighted video content of its own.
+
+This project is not endorsed by, affiliated with, or certified by TMDB, AniList, or any embed provider named above.
+
 ## What it does
 
 Films and series from [TMDB](https://www.themoviedb.org/), anime from [AniList](https://anilist.co/) — three different kinds of thing, kept in their own lane end to end rather than forced into one shape.
